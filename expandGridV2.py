@@ -22,7 +22,7 @@ def expand_and_color_grid_radially(target_size, blue_hex_count, filename_prefix)
     from hexalattice.hexalattice import create_hex_grid, plot_single_lattice_custom_colors
 
     # Initial size
-    nx, ny = 20, 20
+    nx, ny = 15, 15
 
     # Loop through each iteration, expanding the grid each time
     while nx <= target_size and ny <= target_size:
@@ -68,10 +68,10 @@ def expand_and_color_grid_radially(target_size, blue_hex_count, filename_prefix)
 
 
 
-expand_and_color_grid_radially(target_size=50, blue_hex_count=300, filename_prefix="300Blue")
+expand_and_color_grid_radially(target_size=50, blue_hex_count=200, filename_prefix="200Blue")
 
 # Create the GIF and save it in the output folder
-gif_path = os.path.join(output_folder, '300Blue.gif')
+gif_path = os.path.join(output_folder, '200Blue.gif')
 with imageio.get_writer(gif_path, mode='I', duration=0.05) as writer:
     for filename in filenames:
         image = imageio.imread(filename)
