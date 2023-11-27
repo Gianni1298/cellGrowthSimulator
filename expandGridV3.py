@@ -144,7 +144,8 @@ class Scones:
 
         # Pick a random element from the blue_indices set and remove it from the set
         while self.blue_indices:
-            cell_to_move = self.blue_indices.pop()
+            cell_to_move = random.choice(list(self.blue_indices))
+            self.blue_indices.remove(cell_to_move)
             neighbours, indexes = self.hex_grid.find_neighbours(cell_to_move)
 
             allowed_moves = []
@@ -195,5 +196,5 @@ grid.draw(s_cones.blue_indices)
 while len(s_cones.m_cones.get_green_indices()) < 1840:
     grid.draw(s_cones.move_sCones(), s_cones.m_cones.get_green_indices())
 
-grid.create_gif("scones")
+grid.create_gif("scones_v2")
 
