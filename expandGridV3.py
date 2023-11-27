@@ -1,29 +1,37 @@
+import random
 import numpy as np
 import matplotlib.pyplot as plt
 from hexalattice.hexalattice import *
+from collections import deque
+
 
 
 class HexGrid:
     def __init__(self, size):
         self.size = size
-        self.hex_centers, _ = self.generate_hex_centers_with_ix(self.size)
+        self.hex_centers, _ = self.generate_hex_centers(self.size)
+        self.blue_indices = []
         # self.grid_center = [self.hex_centers[:, 0].mean(), self.hex_centers[:, 1].mean()]
 
-    def generate_hex_centers_with_ix(self, size):
+    def generate_hex_centers(self, size):
         # Generate hexagon centers
         return create_hex_grid(nx=self.size, ny=self.size, do_plot=False)
+
+    def find_hexagon_index(self, x, y):
+        # Find the index of the hexagon at the specified coordinates, if it exists
+        mask = np.isclose(self.hex_centers[:, 0], x) & np.isclose(self.hex_centers[:, 1], y)
+        if np.any(mask):
+            index = np.where(mask)[0][0]
+            return index
+        return None
 
     def find_neighbour(self, x, y, dx, dy):
         # Check if a neighbour exists at a specified offset
         neighbour_x, neighbour_y = x + dx, y + dy
 
-        # Use np.isclose to check if the hexagon at these coordinates exists in the grid
-        # It compares each element of the hex_centers with the neighbour_x and neighbour_y within a tolerance
-        mask = np.isclose(self.hex_centers[:, 0], neighbour_x) & np.isclose(self.hex_centers[:, 1], neighbour_y)
-
-        if np.any(mask):
-            index = np.where(mask)[0][0]
-            return [self.hex_centers[index], index]
+        index = self.find_hexagon_index(neighbour_x, neighbour_y)
+        if index:
+            return self.hex_centers[index]
         return None
 
     def find_neighbours(self, hex_ix):
@@ -39,25 +47,30 @@ class HexGrid:
                       (-0.5, -np.sqrt(3) / 2)]  # Bottom left
 
         neighbors = []
+        indexes = []
         for dx, dy in directions:
             neighbour = self.find_neighbour(x, y, dx, dy)
-            if neighbour:
+            if neighbour is not None:
                 neighbors.append(neighbour)
+                indexes.append(self.find_hexagon_index(neighbour[0], neighbour[1]))
 
-        return neighbors
+        return neighbors, indexes
 
-    def draw(self):
+    def draw(self, blue_indices, green_indices=None):
+        if green_indices is None:
+            green_indices = set()
         hex_centers = self.hex_centers
+        self.blue_indices = blue_indices
 
         # Color the selected hexagons blue and the rest white
-        blue_indices = []
-        colors = ['b' if i in blue_indices else 'w' for i in range(len(hex_centers))]
+        colors = ['b' if i in blue_indices else ('g' if i in green_indices else 'w') for i in range(len(hex_centers))]
+
 
         # Now plot the hexagonal grid with the specified colors
         fig, ax = plt.subplots()
         plot_single_lattice_custom_colors(hex_centers[:, 0], hex_centers[:, 1],
                                           face_color=colors,
-                                          edge_color='k',  # Keep the edges black for visibility
+                                          edge_color='w',  # Keep the edges black for visibility
                                           min_diam=0.9,
                                           plotting_gap=0,
                                           rotate_deg=0)
@@ -66,13 +79,80 @@ class HexGrid:
         plt.show()
 
 
-# class s-cones:
-#     def __init__(self):
-#         continue
+class Scones:
+    def __init__(self, hex_grid, s_cone_count):
+        self.hex_grid = hex_grid
+        self.s_cone_count = s_cone_count
+        self.blue_indices = self.init_blue_indices()
+        self.m_cones = Mcones()
+
+    def init_blue_indices(self):
+        if self.s_cone_count == 0:
+            return Exception("s_cone_count must be greater than 0")
+
+        blue_indices = set()
+
+        # Select middle hexagon as the first blue hexagon
+        start_hex = self.hex_grid.find_hexagon_index(0, 0)
+        blue_indices.add(start_hex)
+
+        blue_cells_to_place = self.s_cone_count - 1
+        queue = deque([start_hex])  # Using a deque as a queue for BFS
+        while blue_cells_to_place > 0:
+            cur_cell = queue.popleft()  # Popping from the left side for BFS
+            neighbours, indexes = self.hex_grid.find_neighbours(cur_cell)
+            for index in indexes:
+                if index not in blue_indices:
+                    blue_indices.add(index)
+                    queue.append(index)  # Adding to the right side (end of the queue)
+                    blue_cells_to_place -= 1
+                    if blue_cells_to_place == 0:
+                        break
+        return blue_indices
+
+    def move_sCones(self):
+        new_blue_indices = set()
+
+        # Pick a random element from the blue_indices set and remove it from the set
+        while self.blue_indices:
+            cell_to_move = self.blue_indices.pop()
+            neighbours, indexes = self.hex_grid.find_neighbours(cell_to_move)
+
+            allowed_moves = []
+            for index in indexes:
+                if index not in self.blue_indices and index not in new_blue_indices:
+                    allowed_moves.append(index)
+
+            # Pick a random element from the allowed_moves list and add it to the new_blue_indices set
+            if allowed_moves:
+                new_blue_indices.add(random.choice(allowed_moves))
+                self.m_cones.add_green_index(cell_to_move)
+            else:
+                new_blue_indices.add(cell_to_move)
+
+        self.blue_indices = new_blue_indices
+        return self.blue_indices
+
+
+class Mcones:
+    def __init__(self):
+        self.green_indices = set()
+
+    def get_green_indices(self):
+        return self.green_indices
+
+    def add_green_index(self, index):
+        self.green_indices.add(index)
+
 
 
 # Example usage
-grid = HexGrid(size=5)
+grid = HexGrid(size=50)
+s_cones = Scones(grid, 160)
 
-grid.draw()
-neighbours = grid.find_neighbours(24)
+grid.draw(s_cones.blue_indices)
+
+while len(s_cones.m_cones.get_green_indices()) < 1840:
+    grid.draw(s_cones.move_sCones(), s_cones.m_cones.get_green_indices())
+
+
