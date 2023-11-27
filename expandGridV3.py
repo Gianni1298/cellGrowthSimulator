@@ -3,7 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from hexalattice.hexalattice import *
 from collections import deque
-
+import os
+import imageio
 
 
 class HexGrid:
@@ -11,7 +12,7 @@ class HexGrid:
         self.size = size
         self.hex_centers, _ = self.generate_hex_centers(self.size)
         self.blue_indices = []
-        # self.grid_center = [self.hex_centers[:, 0].mean(), self.hex_centers[:, 1].mean()]
+        self.sorted_distances, self.sorted_indexes = self.get_sorted_distances()
 
     def generate_hex_centers(self, size):
         # Generate hexagon centers
@@ -56,6 +57,16 @@ class HexGrid:
 
         return neighbors, indexes
 
+    def get_sorted_distances(self):
+        # Calculate the radial distances from the center of the grid
+        center_x = self.hex_centers[:, 0].mean()
+        center_y = self.hex_centers[:, 1].mean()
+        distances = ((self.hex_centers[:, 0] - center_x) ** 2 + (self.hex_centers[:, 1] - center_y) ** 2) ** 0.5
+
+        [distances, indexes] = zip(*sorted(zip(distances, range(len(distances)))))
+
+        return distances, indexes
+
     def draw(self, blue_indices, green_indices=None):
         if green_indices is None:
             green_indices = set()
@@ -75,8 +86,23 @@ class HexGrid:
                                           plotting_gap=0,
                                           rotate_deg=0)
 
-        plt.title(f'Hexagonal Grid Size {self.size}x{self.size}')
-        plt.show()
+        green_cells = len(green_indices)
+        plt.title(f'Hexagonal Grid Size {green_cells} green cells')
+        self.save_plot(fig, green_cells)
+
+    def save_plot(self, fig, filename):
+        plt.savefig(f'output_plots/{filename}.png')
+        plt.close(fig)
+
+    def create_gif(self, gif_name):
+        filenames = sorted([f for f in os.listdir('output_plots') if f.endswith('.png')])
+        images = []
+        for filename in filenames:
+            images.append(imageio.v3.imread(f'output_plots/{filename}'))
+        imageio.mimsave('output_plots/movement.gif', images, duration=0.5)
+
+        for filename in filenames:
+            os.remove(f'output_plots/{filename}')
 
 
 class Scones:
@@ -84,7 +110,7 @@ class Scones:
         self.hex_grid = hex_grid
         self.s_cone_count = s_cone_count
         self.blue_indices = self.init_blue_indices()
-        self.m_cones = Mcones()
+        self.m_cones = Mcones(self.hex_grid)
 
     def init_blue_indices(self):
         if self.s_cone_count == 0:
@@ -126,7 +152,10 @@ class Scones:
             # Pick a random element from the allowed_moves list and add it to the new_blue_indices set
             if allowed_moves:
                 new_blue_indices.add(random.choice(allowed_moves))
-                self.m_cones.add_green_index(cell_to_move)
+                if cell_to_move not in self.m_cones.get_green_indices():
+                    self.m_cones.add_green_index(cell_to_move)
+                else:
+                    self.m_cones.add_green_closest_to_center()
             else:
                 new_blue_indices.add(cell_to_move)
 
@@ -135,8 +164,10 @@ class Scones:
 
 
 class Mcones:
-    def __init__(self):
+    def __init__(self, hex_grid):
         self.green_indices = set()
+        self.hex_grid = hex_grid
+
 
     def get_green_indices(self):
         return self.green_indices
@@ -144,6 +175,11 @@ class Mcones:
     def add_green_index(self, index):
         self.green_indices.add(index)
 
+    def add_green_closest_to_center(self):
+        for index in self.hex_grid.sorted_indexes:
+            if index not in self.green_indices and index not in self.hex_grid.blue_indices:
+                self.green_indices.add(index)
+                break
 
 
 # Example usage
@@ -155,4 +191,5 @@ grid.draw(s_cones.blue_indices)
 while len(s_cones.m_cones.get_green_indices()) < 1840:
     grid.draw(s_cones.move_sCones(), s_cones.m_cones.get_green_indices())
 
+grid.create_gif("scones")
 
