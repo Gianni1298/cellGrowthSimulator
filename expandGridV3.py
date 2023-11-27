@@ -95,11 +95,14 @@ class HexGrid:
         plt.close(fig)
 
     def create_gif(self, gif_name):
-        filenames = sorted([f for f in os.listdir('output_plots') if f.endswith('.png')])
+        filenames = [f for f in os.listdir('output_plots') if f.endswith('.png')]
+        # Sorting files numerically based on the number in the filename
+        filenames.sort(key=lambda x: int(x.split('.')[0]))
+
         images = []
         for filename in filenames:
             images.append(imageio.v3.imread(f'output_plots/{filename}'))
-        imageio.mimsave('output_plots/movement.gif', images, duration=0.5)
+        imageio.mimsave(f'output_plots/{gif_name}.gif', images, duration=0.5)
 
         for filename in filenames:
             os.remove(f'output_plots/{filename}')
@@ -110,7 +113,7 @@ class Scones:
         self.hex_grid = hex_grid
         self.s_cone_count = s_cone_count
         self.blue_indices = self.init_blue_indices()
-        self.m_cones = Mcones(self.hex_grid)
+        self.m_cones = Mcones(self.hex_grid, birth_rate=0.1)
 
     def init_blue_indices(self):
         if self.s_cone_count == 0:
@@ -164,10 +167,10 @@ class Scones:
 
 
 class Mcones:
-    def __init__(self, hex_grid):
+    def __init__(self, hex_grid, birth_rate):
         self.green_indices = set()
         self.hex_grid = hex_grid
-
+        self.birth_rate = birth_rate
 
     def get_green_indices(self):
         return self.green_indices
@@ -176,10 +179,11 @@ class Mcones:
         self.green_indices.add(index)
 
     def add_green_closest_to_center(self):
-        for index in self.hex_grid.sorted_indexes:
-            if index not in self.green_indices and index not in self.hex_grid.blue_indices:
-                self.green_indices.add(index)
-                break
+        if random.random() <= self.birth_rate:
+            for index in self.hex_grid.sorted_indexes:
+                if index not in self.green_indices and index not in self.hex_grid.blue_indices:
+                    self.green_indices.add(index)
+                    break
 
 
 # Example usage
