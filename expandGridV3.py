@@ -12,6 +12,7 @@ class HexGrid:
         self.size = size
         self.hex_centers, _ = self.generate_hex_centers(self.size)
         self.blue_indices = []
+        self.x_center, self.y_center = self.hex_centers[:, 0].mean(), self.hex_centers[:, 1].mean()
         self.sorted_distances, self.sorted_indexes = self.get_sorted_distances()
 
     def generate_hex_centers(self, size):
@@ -56,6 +57,13 @@ class HexGrid:
                 indexes.append(self.find_hexagon_index(neighbour[0], neighbour[1]))
 
         return neighbors, indexes
+
+    def calculate_distance(self, index):
+        # Calculate the radial distance from the center of the grid
+        center_x = self.x_center
+        center_y = self.y_center
+        distance = ((self.hex_centers[index, 0] - center_x) ** 2 + (self.hex_centers[index, 1] - center_y) ** 2) ** 0.5
+        return distance
 
     def get_sorted_distances(self):
         # Calculate the radial distances from the center of the grid
@@ -113,7 +121,7 @@ class Scones:
         self.hex_grid = hex_grid
         self.s_cone_count = s_cone_count
         self.blue_indices = self.init_blue_indices()
-        self.m_cones = Mcones(self.hex_grid, birth_rate=0.1)
+        self.m_cones = Mcones(self.hex_grid, birth_rate=0.05)
 
     def init_blue_indices(self):
         if self.s_cone_count == 0:
@@ -155,6 +163,7 @@ class Scones:
 
             # Pick a random element from the allowed_moves list and add it to the new_blue_indices set
             if allowed_moves:
+                self.calculate_moves_probability(cell_to_move, allowed_moves)
                 new_blue_indices.add(random.choice(allowed_moves))
                 if cell_to_move not in self.m_cones.get_green_indices():
                     self.m_cones.add_green_index(cell_to_move)
@@ -165,6 +174,30 @@ class Scones:
 
         self.blue_indices = new_blue_indices
         return self.blue_indices
+
+    def calculate_moves_probability(self, cell_to_move, allowed_moves):
+        center_distance = self.hex_grid.calculate_distance(cell_to_move)
+        move_distances = [self.hex_grid.calculate_distance(move) for move in allowed_moves]
+        max_distance = max(self.hex_grid.sorted_distances)
+
+        if center_distance < max_distance / 2:
+            # Cell is within halfway to the edge
+            # Decrease probability quadratically with distance
+            probabilities = [(max_distance - (distance - center_distance)**2) for distance in move_distances]
+            total = sum(probabilities)
+            probabilities = [p / total for p in probabilities]
+        else:
+            # Cell is beyond halfway, equal probability for all moves
+            probabilities = [1 / len(allowed_moves) for _ in allowed_moves]
+
+        # Ensure probabilities sum to 1
+        total = sum(probabilities)
+        probabilities = [p / total for p in probabilities]
+
+        # Choose a move based on these probabilities
+        chosen_move = np.random.choice(allowed_moves, p=probabilities)
+        return chosen_move
+
 
 
 class Mcones:
@@ -196,5 +229,5 @@ grid.draw(s_cones.blue_indices)
 while len(s_cones.m_cones.get_green_indices()) < 1840:
     grid.draw(s_cones.move_sCones(), s_cones.m_cones.get_green_indices())
 
-grid.create_gif("scones_v2")
+grid.create_gif("scones_v4")
 
