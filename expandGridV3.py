@@ -82,7 +82,7 @@ class HexGrid:
         self.blue_indices = blue_indices
 
         # Color the selected hexagons blue and the rest white
-        colors = ['b' if i in blue_indices else ('g' if i in green_indices else 'w') for i in range(len(hex_centers))]
+        colors = ['b' if i in blue_indices else ('aquamarine' if i in green_indices else 'w') for i in range(len(hex_centers))]
 
 
         # Now plot the hexagonal grid with the specified colors
@@ -121,7 +121,7 @@ class Scones:
         self.hex_grid = hex_grid
         self.s_cone_count = s_cone_count
         self.blue_indices = self.init_blue_indices()
-        self.m_cones = Mcones(self.hex_grid, birth_rate=0.05)
+        self.m_cones = Mcones(self.hex_grid, birth_rate=1)
 
     def init_blue_indices(self):
         if self.s_cone_count == 0:
@@ -163,8 +163,8 @@ class Scones:
 
             # Pick a random element from the allowed_moves list and add it to the new_blue_indices set
             if allowed_moves:
-                self.calculate_moves_probability(cell_to_move, allowed_moves)
-                new_blue_indices.add(random.choice(allowed_moves))
+                move = self.choose_move(cell_to_move, allowed_moves, "exp")
+                new_blue_indices.add(move)
                 if cell_to_move not in self.m_cones.get_green_indices():
                     self.m_cones.add_green_index(cell_to_move)
                 else:
@@ -175,26 +175,37 @@ class Scones:
         self.blue_indices = new_blue_indices
         return self.blue_indices
 
-    def calculate_moves_probability(self, cell_to_move, allowed_moves):
-        center_distance = self.hex_grid.calculate_distance(cell_to_move)
-        move_distances = [self.hex_grid.calculate_distance(move) for move in allowed_moves]
-        max_distance = max(self.hex_grid.sorted_distances)
+    def choose_move(self, cell_to_move, allowed_moves, function="log"):
+        max_distance = self.hex_grid.sorted_distances[-1]   # Apply logic until 2/3 of the grid
+        current_distance = self.hex_grid.calculate_distance(cell_to_move)
 
-        if center_distance < max_distance / 2:
-            # Cell is within halfway to the edge
-            # Decrease probability quadratically with distance
-            probabilities = [(max_distance - (distance - center_distance)**2) for distance in move_distances]
-            total = sum(probabilities)
-            probabilities = [p / total for p in probabilities]
-        else:
-            # Cell is beyond halfway, equal probability for all moves
-            probabilities = [1 / len(allowed_moves) for _ in allowed_moves]
+        probabilities = []
 
-        # Ensure probabilities sum to 1
+        # Minimum distance to avoid log(0)
+        min_distance = 1e-5
+
+        # Calculate probability quadratically decreasing with distance
+        for move in allowed_moves:
+            move_distance = self.hex_grid.calculate_distance(move)
+            if function == "log":
+                probability = -np.log(max_distance - move_distance + min_distance)
+            elif function == "lin":
+                probability = max_distance - move_distance
+            elif function == "quad":
+                probability = (max_distance - move_distance)**2
+            elif function == "exp":
+                probability = np.exp(-0.00001 * move_distance)
+            probabilities.append(probability)
+
+
+
+
+
+        # Normalize probabilities to sum up to 1
         total = sum(probabilities)
-        probabilities = [p / total for p in probabilities]
+        probabilities = [p/total for p in probabilities]
 
-        # Choose a move based on these probabilities
+        # Choose a move based on the probabilities
         chosen_move = np.random.choice(allowed_moves, p=probabilities)
         return chosen_move
 
@@ -221,7 +232,7 @@ class Mcones:
 
 
 # Example usage
-grid = HexGrid(size=50)
+grid = HexGrid(size=45)
 s_cones = Scones(grid, 160)
 
 grid.draw(s_cones.blue_indices)
@@ -229,5 +240,5 @@ grid.draw(s_cones.blue_indices)
 while len(s_cones.m_cones.get_green_indices()) < 1840:
     grid.draw(s_cones.move_sCones(), s_cones.m_cones.get_green_indices())
 
-grid.create_gif("scones_v4")
+grid.create_gif("scones_v10_exp_decreasing_1br_0.001decay")
 
