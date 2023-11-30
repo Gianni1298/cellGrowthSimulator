@@ -121,7 +121,8 @@ class Scones:
         self.hex_grid = hex_grid
         self.s_cone_count = s_cone_count
         self.blue_indices = self.init_blue_indices()
-        self.m_cones = Mcones(self.hex_grid, birth_rate=1)
+        self.m_cones = Mcones(self.hex_grid, birth_rate=0.5)
+        self.decay_rate = 0.01
 
     def init_blue_indices(self):
         if self.s_cone_count == 0:
@@ -163,7 +164,7 @@ class Scones:
 
             # Pick a random element from the allowed_moves list and add it to the new_blue_indices set
             if allowed_moves:
-                move = self.choose_move(cell_to_move, allowed_moves, "exp")
+                move = self.choose_move(cell_to_move, allowed_moves)
                 new_blue_indices.add(move)
                 if cell_to_move not in self.m_cones.get_green_indices():
                     self.m_cones.add_green_index(cell_to_move)
@@ -175,30 +176,21 @@ class Scones:
         self.blue_indices = new_blue_indices
         return self.blue_indices
 
-    def choose_move(self, cell_to_move, allowed_moves, function="log"):
-        max_distance = self.hex_grid.sorted_distances[-1]   # Apply logic until 2/3 of the grid
+    def choose_move(self, cell_to_move, allowed_moves):
+        max_distance = self.hex_grid.sorted_distances[-1]
         current_distance = self.hex_grid.calculate_distance(cell_to_move)
 
         probabilities = []
 
-        # Minimum distance to avoid log(0)
-        min_distance = 1e-5
+        # Amplification factor: the closer we're to the center, the more likely we are to move outwards
+        # If we are at the center, we are guaranteed to move outwards
+        # If we are closer to the edge, it is equally likely to move in all directions
+        A = np.exp(-self.decay_rate * (current_distance / max_distance))
 
-        # Calculate probability quadratically decreasing with distance
+        # Calculate the probability of moving in each direction
         for move in allowed_moves:
-            move_distance = self.hex_grid.calculate_distance(move)
-            if function == "log":
-                probability = -np.log(max_distance - move_distance + min_distance)
-            elif function == "lin":
-                probability = max_distance - move_distance
-            elif function == "quad":
-                probability = (max_distance - move_distance)**2
-            elif function == "exp":
-                probability = np.exp(-0.00001 * move_distance)
-            probabilities.append(probability)
-
-
-
+            move_distance = self.hex_grid.calculate_distance(move) - current_distance
+            probabilities.append(A * np.exp(move_distance / 2))
 
 
         # Normalize probabilities to sum up to 1
@@ -240,5 +232,5 @@ grid.draw(s_cones.blue_indices)
 while len(s_cones.m_cones.get_green_indices()) < 1840:
     grid.draw(s_cones.move_sCones(), s_cones.m_cones.get_green_indices())
 
-grid.create_gif("scones_v10_exp_decreasing_1br_0.001decay")
+grid.create_gif(f"scones_v13_{s_cones.m_cones.birth_rate}br_{grid.size}Grid_decay_rate{s_cones.decay_rate}")
 
