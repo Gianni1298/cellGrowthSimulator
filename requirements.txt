@@ -2,3 +2,5 @@ hexalattice~=1.3.0
 numpy~=1.26.1
 matplotlib~=3.8.1
 imageio~=2.31.6
+scipy~=1.11.4
+shapely~=2.0.2

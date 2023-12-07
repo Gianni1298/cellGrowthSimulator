@@ -82,8 +82,8 @@ class HexGrid:
         self.blue_indices = blue_indices
 
         # Color the selected hexagons blue and the rest white
-        colors = ['b' if i in blue_indices else ('aquamarine' if i in green_indices else 'w') for i in range(len(hex_centers))]
-
+        colors = ['b' if i in blue_indices else ('aquamarine' if i in green_indices else 'w') for i in
+                  range(len(hex_centers))]
 
         # Now plot the hexagonal grid with the specified colors
         fig, ax = plt.subplots()
@@ -117,12 +117,27 @@ class HexGrid:
 
 
 class Scones:
-    def __init__(self, hex_grid, s_cone_count):
+    def __init__(self, hex_grid, s_cone_params):
+        self.exponential_probability_growth_factor = None
+        self.m_cones = None
+        self.s_cone_count = None
+        # Gaussian parameters
+        self.a = None
+       # self.b_offset_speed = None
+        self.c = None
+
         self.hex_grid = hex_grid
-        self.s_cone_count = s_cone_count
+        self.init_params(s_cone_params)
         self.blue_indices = self.init_blue_indices()
-        self.m_cones = Mcones(self.hex_grid, birth_rate=0.5)
-        self.decay_rate = 0.01
+
+
+    def init_params(self, s_cone_params):
+        self.s_cone_count = s_cone_params["s_cones_final_count"]
+        self.m_cones = Mcones(self.hex_grid, s_cone_params["m_cones_birth_rate"])
+        self.exponential_probability_growth_factor = s_cone_params["exponential_probability_growth_factor"]
+        self.a = s_cone_params["a"]
+       # self.b_offset_speed = s_cone_params["b_offset_speed"]
+        self.c = s_cone_params["c"]
 
     def init_blue_indices(self):
         if self.s_cone_count == 0:
@@ -182,25 +197,36 @@ class Scones:
 
         probabilities = []
 
-        # Amplification factor: the closer we're to the center, the more likely we are to move outwards
-        # If we are at the center, we are guaranteed to move outwards
-        # If we are closer to the edge, it is equally likely to move in all directions
-        A = np.exp(-self.decay_rate * (current_distance / max_distance))
+        # Gaussian parameters
+        a = self.a  # Peak height
+
+        green_cells_count = len(self.m_cones.get_green_indices())
+        total_cells_count = len(self.hex_grid.hex_centers)
+
+        # Normalize the count of green cells to a range of 0 to 1
+        normalized_count = green_cells_count / total_cells_count
+        b = normalized_count * max_distance
+
+        # # b as a ReLU function
+        # b_offset = (len(self.m_cones.get_green_indices()) - 160) / (max_distance * 1.5)
+        # b = max(0, b_offset)  # ReLU function, increasing when green_indices >= 160
+        c = self.c  # Width of the bell, adjust as needed
+
+        # Gaussian amplification factor
+        A = a * np.exp(-((b - current_distance) ** 2) / (2 * c ** 2))
 
         # Calculate the probability of moving in each direction
         for move in allowed_moves:
             move_distance = self.hex_grid.calculate_distance(move) - current_distance
-            probabilities.append(A * np.exp(move_distance / 2))
-
+            probabilities.append(A * np.exp(move_distance / self.exponential_probability_growth_factor))
 
         # Normalize probabilities to sum up to 1
         total = sum(probabilities)
-        probabilities = [p/total for p in probabilities]
+        probabilities = [p / total for p in probabilities]
 
         # Choose a move based on the probabilities
         chosen_move = np.random.choice(allowed_moves, p=probabilities)
         return chosen_move
-
 
 
 class Mcones:
@@ -225,12 +251,23 @@ class Mcones:
 
 # Example usage
 grid = HexGrid(size=45)
-s_cones = Scones(grid, 160)
+s_cones_parameters = {
+    "s_cones_final_count": 160,
+    "m_cones_final_count": 1840,
+    "m_cones_birth_rate": 0.76,
+
+    # Gaussian parameters
+    "a": 80,  # Peak height
+    "c": 5,  # Width of the bell, adjust as needed
+
+    "exponential_probability_growth_factor": 4
+}
+
+s_cones = Scones(grid, s_cones_parameters)
 
 grid.draw(s_cones.blue_indices)
 
 while len(s_cones.m_cones.get_green_indices()) < 1840:
     grid.draw(s_cones.move_sCones(), s_cones.m_cones.get_green_indices())
 
-grid.create_gif(f"scones_v13_{s_cones.m_cones.birth_rate}br_{grid.size}Grid_decay_rate{s_cones.decay_rate}")
-
+grid.create_gif(f"scones_v14_gauss_{s_cones.m_cones.birth_rate}br_{grid.size}")
