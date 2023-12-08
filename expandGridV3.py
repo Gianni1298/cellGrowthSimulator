@@ -27,6 +27,15 @@ class HexGrid:
             return index
         return None
 
+    def find_closest_hexagon(self, x, y):
+        # Calculate distances from the point (x, y) to each hex center
+        distances = np.sqrt((self.hex_centers[:, 0] - x) ** 2 + (self.hex_centers[:, 1] - y) ** 2)
+
+        # Find the index of the closest hexagon
+        closest_index = np.argmin(distances)
+
+        return closest_index
+
     def find_neighbour(self, x, y, dx, dy):
         # Check if a neighbour exists at a specified offset
         neighbour_x, neighbour_y = x + dx, y + dy
@@ -128,7 +137,7 @@ class Scones:
 
         self.hex_grid = hex_grid
         self.init_params(s_cone_params)
-        self.blue_indices = self.init_blue_indices()
+        self.blue_indices = self.init_blue_indices(s_cone_params["init_mode"])
 
 
     def init_params(self, s_cone_params):
@@ -139,12 +148,18 @@ class Scones:
        # self.b_offset_speed = s_cone_params["b_offset_speed"]
         self.c = s_cone_params["c"]
 
-    def init_blue_indices(self):
+    def init_blue_indices(self, init_mode):
         if self.s_cone_count == 0:
             return Exception("s_cone_count must be greater than 0")
 
-        blue_indices = set()
+        if init_mode == "bfs":
+            return self.bfs_init()
+        elif init_mode == "random":
+            return self.random_init()
 
+
+    def bfs_init(self):
+        blue_indices = set()
         # Select middle hexagon as the first blue hexagon
         start_hex = self.hex_grid.find_hexagon_index(0, 0)
         blue_indices.add(start_hex)
@@ -162,6 +177,38 @@ class Scones:
                     if blue_cells_to_place == 0:
                         break
         return blue_indices
+
+    def random_init(self):
+        blue_indices = set()
+        blue_cells_to_place = self.s_cone_count
+
+        # Calculate the radius of the circle for initialization
+        radius = self.hex_grid.size // 4  # You can adjust this as needed
+
+        while blue_cells_to_place > 0:
+            # Generate a random point
+            random_x = random.uniform(-self.hex_grid.size / 2, self.hex_grid.size / 2)
+            random_y = random.uniform(-self.hex_grid.size / 2, self.hex_grid.size / 2)
+
+            # Check if the point is within the circle
+            if (random_x ** 2 + random_y ** 2) <= radius ** 2:
+                index = self.hex_grid.find_closest_hexagon(random_x, random_y)
+                if index not in blue_indices:
+                    blue_indices.add(index)
+                    blue_cells_to_place -= 1
+
+        green_indices = self.fill_circle_with_green(radius, blue_indices)
+        return blue_indices
+
+    def fill_circle_with_green(self, radius, blue_indices):
+        center_x, center_y = self.hex_grid.x_center, self.hex_grid.y_center
+
+        for index, (x, y) in enumerate(self.hex_grid.hex_centers):
+            if index not in blue_indices:
+                distance_from_center = ((x - center_x) ** 2 + (y - center_y) ** 2) ** 0.5
+                if distance_from_center <= radius:
+                    self.m_cones.add_green_index(index)
+        return
 
     def move_sCones(self):
         new_blue_indices = set()
@@ -204,12 +251,12 @@ class Scones:
         total_cells_count = len(self.hex_grid.hex_centers)
 
         # Normalize the count of green cells to a range of 0 to 1
-        normalized_count = green_cells_count / total_cells_count
-        b = normalized_count * max_distance
+        # normalized_count = green_cells_count / total_cells_count
+        # b = normalized_count * max_distance
 
         # # b as a ReLU function
-        # b_offset = (len(self.m_cones.get_green_indices()) - 160) / (max_distance * 1.5)
-        # b = max(0, b_offset)  # ReLU function, increasing when green_indices >= 160
+        b_offset = (len(self.m_cones.get_green_indices()) - 300) / (max_distance * 1.5)
+        b = max(0, b_offset)  # ReLU function, increasing when green_indices >= 160
         c = self.c  # Width of the bell, adjust as needed
 
         # Gaussian amplification factor
@@ -258,9 +305,11 @@ s_cones_parameters = {
 
     # Gaussian parameters
     "a": 80,  # Peak height
-    "c": 5,  # Width of the bell, adjust as needed
+    "c": 5.0,  # Width of the bell, adjust as needed
 
-    "exponential_probability_growth_factor": 4
+    "exponential_probability_growth_factor": 4.0,
+
+    "init_mode": "bfs"
 }
 
 s_cones = Scones(grid, s_cones_parameters)

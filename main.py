@@ -6,7 +6,7 @@ import itertools
 import logging
 
 # Setting up logging
-logging.basicConfig(filename='parameter_optimization_log.txt', level=logging.INFO)
+logging.basicConfig(filename='parameter_optimization_log_random_init_relu_function.txt', level=logging.INFO)
 
 
 # Function to run the simulation with given parameters
@@ -18,7 +18,8 @@ def run_simulation(birth_rate, a, c, exponential_probability_growth_factor):
         "m_cones_birth_rate": birth_rate,
         "a": a,
         "c": c,
-        "exponential_probability_growth_factor": exponential_probability_growth_factor
+        "exponential_probability_growth_factor": exponential_probability_growth_factor,
+        "init_mode": "random"
     }
 
     s_cones = Scones(grid, s_cones_parameters)
