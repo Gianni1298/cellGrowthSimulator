@@ -127,12 +127,10 @@ class HexGrid:
 
 class Scones:
     def __init__(self, hex_grid, s_cone_params):
-        self.exponential_probability_growth_factor = None
         self.m_cones = None
         self.s_cone_count = None
         # Gaussian parameters
         self.a = None
-       # self.b_offset_speed = None
         self.c = None
 
         self.hex_grid = hex_grid
@@ -143,9 +141,8 @@ class Scones:
     def init_params(self, s_cone_params):
         self.s_cone_count = s_cone_params["s_cones_final_count"]
         self.m_cones = Mcones(self.hex_grid, s_cone_params["m_cones_birth_rate"])
-        self.exponential_probability_growth_factor = s_cone_params["exponential_probability_growth_factor"]
         self.a = s_cone_params["a"]
-       # self.b_offset_speed = s_cone_params["b_offset_speed"]
+        self.m = s_cone_params["m"]
         self.c = s_cone_params["c"]
 
     def init_blue_indices(self, init_mode):
@@ -247,25 +244,33 @@ class Scones:
         # Gaussian parameters
         a = self.a  # Peak height
 
+        # Calculate the b_offset as a b = m * x where m can be optimized and x is the number of green cells normalised to the total number of hexagons
         green_cells_count = len(self.m_cones.get_green_indices())
         total_cells_count = len(self.hex_grid.hex_centers)
 
         # Normalize the count of green cells to a range of 0 to 1
-        # normalized_count = green_cells_count / total_cells_count
-        # b = normalized_count * max_distance
+        normalized_count = green_cells_count / len(self.hex_grid.hex_centers)
+        b = normalized_count * self.m
 
-        # # b as a ReLU function
-        b_offset = (len(self.m_cones.get_green_indices()) - 300) / (max_distance * 1.5)
-        b = max(0, b_offset)  # ReLU function, increasing when green_indices >= 160
+        # # # b as a ReLU function
+        # b_offset = (len(self.m_cones.get_green_indices()) - 300) / (max_distance * 1.5)
+        # b = max(0, b_offset)  # ReLU function, increasing when green_indices >= 160
         c = self.c  # Width of the bell, adjust as needed
 
         # Gaussian amplification factor
         A = a * np.exp(-((b - current_distance) ** 2) / (2 * c ** 2))
 
         # Calculate the probability of moving in each direction
+        distance_increases = []
         for move in allowed_moves:
-            move_distance = self.hex_grid.calculate_distance(move) - current_distance
-            probabilities.append(A * np.exp(move_distance / self.exponential_probability_growth_factor))
+            move_distance = self.hex_grid.calculate_distance(move)
+            direction_factor = 1 + (move_distance - current_distance) / current_distance if move_distance > current_distance else 0.5
+
+            # Apply Gaussian function
+            gaussian_factor = a * np.exp(-((move_distance - b) ** 2) / (2 * c ** 2))
+            probability = direction_factor * gaussian_factor
+            probabilities.append(probability)
+
 
         # Normalize probabilities to sum up to 1
         total = sum(probabilities)
@@ -301,13 +306,12 @@ grid = HexGrid(size=45)
 s_cones_parameters = {
     "s_cones_final_count": 160,
     "m_cones_final_count": 1840,
-    "m_cones_birth_rate": 0.76,
+    "m_cones_birth_rate": 1,
 
     # Gaussian parameters
-    "a": 80,  # Peak height
-    "c": 5.0,  # Width of the bell, adjust as needed
-
-    "exponential_probability_growth_factor": 4.0,
+    "a": 100,  # Peak height
+    "c": 10,  # Width of the bell, adjust as needed
+    "m": 30,  # Coefficient of speed of the offset of the bell, adjust as needed
 
     "init_mode": "bfs"
 }
@@ -319,4 +323,4 @@ grid.draw(s_cones.blue_indices)
 while len(s_cones.m_cones.get_green_indices()) < 1840:
     grid.draw(s_cones.move_sCones(), s_cones.m_cones.get_green_indices())
 
-grid.create_gif(f"scones_v14_gauss_{s_cones.m_cones.birth_rate}br_{grid.size}")
+grid.create_gif(f"scones_v14_gauss_{s_cones.m_cones.birth_rate}br_{grid.size}_m={s_cones_parameters['m']}_a={s_cones_parameters['a']}_c={s_cones_parameters['c']}")
