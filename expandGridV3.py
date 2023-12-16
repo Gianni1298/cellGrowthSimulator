@@ -132,6 +132,8 @@ class Scones:
         # Gaussian parameters
         self.a = None
         self.c = None
+        self.dfs = False
+        self.time_step = 0
 
         self.hex_grid = hex_grid
         self.init_params(s_cone_params)
@@ -144,6 +146,7 @@ class Scones:
         self.a = s_cone_params["a"]
         self.m = s_cone_params["m"]
         self.c = s_cone_params["c"]
+        self.dfs = s_cone_params["dfs"]
 
     def init_blue_indices(self, init_mode):
         if self.s_cone_count == 0:
@@ -209,6 +212,28 @@ class Scones:
 
     def move_sCones(self):
         new_blue_indices = set()
+        self.time_step += 1
+
+        def dfs_move(cell_to_move, visited = None):
+            if visited is None:
+                visited = set()
+
+            neighbours, neighbour_indexes = self.hex_grid.find_neighbours(cell_to_move)
+            # Sort neighbours by increasing distance from the center
+            sorted_neighbours = sorted(neighbour_indexes, key=lambda ix: self.hex_grid.calculate_distance(ix), reverse=True)
+
+            for index in sorted_neighbours:
+                if index in visited:
+                    continue  # Skip already visited cells to prevent cycles
+
+                visited.add(index)
+                if index not in self.blue_indices and index not in new_blue_indices:
+                    return index  # Found a cell that can be moved
+                elif index in self.blue_indices:
+                    result = dfs_move(index, visited)
+                    if result is not None:
+                        return result  # Propagate the move up the call stack
+            return None
 
         # Pick a random element from the blue_indices set and remove it from the set
         while self.blue_indices:
@@ -230,54 +255,59 @@ class Scones:
                 else:
                     self.m_cones.add_green_closest_to_center()
             else:
-                new_blue_indices.add(cell_to_move)
+                if self.dfs is False:
+                    new_blue_indices.add(cell_to_move)
+
+                elif self.dfs is True:
+                    # Use DFS to find a new position
+                    new_position = dfs_move(cell_to_move)
+                    if new_position is not None:
+                        new_blue_indices.add(new_position)
+
 
         self.blue_indices = new_blue_indices
         return self.blue_indices
 
     def choose_move(self, cell_to_move, allowed_moves):
-        max_distance = self.hex_grid.sorted_distances[-1]
+        # Calculate the normalized count of green cells
+        green_ratio = len(self.m_cones.get_green_indices()) / len(self.hex_grid.hex_centers)
+
+        # Update the Gaussian wave's mean based on the green ratio and velocity m
+        mu = self.m * green_ratio
+
+        # Calculate the 80% percentile of the Gaussian distribution
+        p80 = mu + 0.842 * self.c
+
+        # Check the distance of the cell from the center
         current_distance = self.hex_grid.calculate_distance(cell_to_move)
 
-        probabilities = []
+        if abs(current_distance - mu) <= p80 - mu:
+            # Rank the moves based on how much they increase the distance from the center
+            move_distances = [(move, self.hex_grid.calculate_distance(move)) for move in allowed_moves]
+            move_distances.sort(key=lambda x: x[1] - current_distance, reverse=True)
 
-        # Gaussian parameters
-        a = self.a  # Peak height
+            # Assign probabilities proportional to the rank
+            total_ranks = sum(range(1, len(allowed_moves) + 1))
+            probabilities = [(len(allowed_moves) - rank) / total_ranks for rank, _ in enumerate(move_distances)]
 
-        # Calculate the b_offset as a b = m * x where m can be optimized and x is the number of green cells normalised to the total number of hexagons
-        green_cells_count = len(self.m_cones.get_green_indices())
-        total_cells_count = len(self.hex_grid.hex_centers)
+            # Extract moves from sorted list
+            sorted_moves = [move for move, _ in move_distances]
+        else:
+            # If the cell is outside the 80% percentile, use Gaussian probabilities
+            probabilities = []
+            for move in allowed_moves:
+                distance = self.hex_grid.calculate_distance(move)
+                probability = self.a * np.exp(-((distance - mu) ** 2) / (2 * self.c ** 2))
+                probabilities.append(probability)
 
-        # Normalize the count of green cells to a range of 0 to 1
-        normalized_count = green_cells_count / len(self.hex_grid.hex_centers)
-        b = normalized_count * self.m
+            # Normalize probabilities to sum up to 1
+            total = sum(probabilities)
+            probabilities = [p / total for p in probabilities]
 
-        # # # b as a ReLU function
-        # b_offset = (len(self.m_cones.get_green_indices()) - 300) / (max_distance * 1.5)
-        # b = max(0, b_offset)  # ReLU function, increasing when green_indices >= 160
-        c = self.c  # Width of the bell, adjust as needed
-
-        # Gaussian amplification factor
-        A = a * np.exp(-((b - current_distance) ** 2) / (2 * c ** 2))
-
-        # Calculate the probability of moving in each direction
-        distance_increases = []
-        for move in allowed_moves:
-            move_distance = self.hex_grid.calculate_distance(move)
-            direction_factor = 1 + (move_distance - current_distance) / current_distance if move_distance > current_distance else 0.5
-
-            # Apply Gaussian function
-            gaussian_factor = a * np.exp(-((move_distance - b) ** 2) / (2 * c ** 2))
-            probability = direction_factor * gaussian_factor
-            probabilities.append(probability)
-
-
-        # Normalize probabilities to sum up to 1
-        total = sum(probabilities)
-        probabilities = [p / total for p in probabilities]
+            sorted_moves = allowed_moves
 
         # Choose a move based on the probabilities
-        chosen_move = np.random.choice(allowed_moves, p=probabilities)
+        chosen_move = np.random.choice(sorted_moves, p=probabilities)
         return chosen_move
 
 
@@ -306,14 +336,14 @@ grid = HexGrid(size=45)
 s_cones_parameters = {
     "s_cones_final_count": 160,
     "m_cones_final_count": 1840,
-    "m_cones_birth_rate": 1,
+    "m_cones_birth_rate": 0.6,
 
     # Gaussian parameters
-    "a": 100,  # Peak height
-    "c": 10,  # Width of the bell, adjust as needed
-    "m": 30,  # Coefficient of speed of the offset of the bell, adjust as needed
+    "c": 30,  # Width of the bell, adjust as needed
+    "m": 45,  # Coefficient of speed of the offset of the bell, adjust as needed
 
-    "init_mode": "bfs"
+    "init_mode": "random",
+    "dfs": True
 }
 
 s_cones = Scones(grid, s_cones_parameters)
@@ -323,4 +353,10 @@ grid.draw(s_cones.blue_indices)
 while len(s_cones.m_cones.get_green_indices()) < 1840:
     grid.draw(s_cones.move_sCones(), s_cones.m_cones.get_green_indices())
 
-grid.create_gif(f"scones_v14_gauss_{s_cones.m_cones.birth_rate}br_{grid.size}_m={s_cones_parameters['m']}_a={s_cones_parameters['a']}_c={s_cones_parameters['c']}")
+grid.create_gif(f"scones_v14_gauss_"
+                f"{s_cones.m_cones.birth_rate}"
+                f"br_{grid.size}_"
+                f"m={s_cones_parameters['m']}_"
+                f"a={s_cones_parameters['a']}_"
+                f"c={s_cones_parameters['c']}_"
+                f"init={s_cones_parameters['init_mode']}")
