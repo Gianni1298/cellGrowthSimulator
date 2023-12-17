@@ -84,7 +84,7 @@ class HexGrid:
 
         return distances, indexes
 
-    def draw(self, cell_indexes, plot = False):
+    def draw(self, cell_indexes, plot=False):
         hex_centers = self.hex_centers
         # Color the selected hexagons blue and the rest white
         colors = [cell_indexes.get(i, 'w') for i in range(len(hex_centers))]
@@ -127,17 +127,18 @@ class Scones:
     def __init__(self, hex_grid, s_cone_params):
         self.hex_grid = hex_grid
         self.s_cone_params = s_cone_params
-        self.cell_indexes = self.init(s_cone_params["init_mode"]) # Map of cell indexes to cell color {index: color}
+        self.cell_indexes = self.init(s_cone_params["init_mode"])  # Map of cell indexes to cell color {index: color}
         print(self.cell_indexes)
-        self.blue_indices = None
-        self.green_indices = None
+        self.debug = {"birth_colors": [], "birth_probabilities": []}
+
+        self.stopSignal = False
 
     def init(self, init_mode):
         if init_mode == "bfs":
             return self.bfs_init()
         elif init_mode == "random":
             print("Random init not implemented yet!")
-            #return self.random_init()
+            # return self.random_init()
 
     def bfs_init(self):
         total_cells_to_place = self.s_cone_params["s_cones_init_count"] + self.s_cone_params["m_cones_init_count"]
@@ -217,6 +218,8 @@ class Scones:
         # Randomly select a cell to start the cascade
         cell_to_move_index = random.choice(list(self.cell_indexes.keys()))
         # cell_to_move_index = self.hex_grid.find_closest_hexagon(0, 0)
+        print("Moving cell at index", cell_to_move_index)
+
         moving_color = self.cell_indexes[cell_to_move_index]
         move = self.choose_move(cell_to_move_index)
 
@@ -225,11 +228,14 @@ class Scones:
             self.cell_indexes[move] = moving_color
         else:
             # If the spot is occupied, start a cascade move
-            print(f"Starting cascade move from {cell_to_move_index}->{moving_color} to {move}->{self.cell_indexes[move]}")
             self.cascade_move(move, moving_color, visited={cell_to_move_index})
 
-        # Remove the original cell
-        del self.cell_indexes[cell_to_move_index]
+        # A new cell is born that takes the place of the cell that moved
+        self.cell_indexes[cell_to_move_index] = self.cell_birth()
+
+        if len(self.cell_indexes) > self.s_cone_params["s_cones_final_count"] + self.s_cone_params["m_cones_final_count"]:
+            self.stopSignal = True
+            return
 
     def cascade_move(self, current_index, moving_color, visited=None):
         if visited is None:
@@ -240,7 +246,8 @@ class Scones:
         neighbours, neighbour_indexes = self.hex_grid.find_neighbours(current_index)
 
         # Sort neighbours by increasing distance from the center
-        sorted_neighbours = sorted(neighbour_indexes, key=lambda ix: (ix in self.cell_indexes, -self.hex_grid.calculate_distance(ix)))
+        sorted_neighbours = sorted(neighbour_indexes,
+                                   key=lambda ix: (ix in self.cell_indexes, -self.hex_grid.calculate_distance(ix)))
 
         for next_move in sorted_neighbours:
             if next_move in visited:
@@ -254,69 +261,64 @@ class Scones:
                 # Continue the cascade with the color of the cell that is being displaced
                 displaced_color = self.cell_indexes[current_index]
                 self.cell_indexes[current_index] = moving_color
-                print(f"Moving {current_index}->{displaced_color} to {next_move}->{self.cell_indexes.get(next_move, 'empty')}")
                 self.cascade_move(next_move, displaced_color, visited)
                 return
         return
 
+    def cell_birth(self):
+        # A blue cell or green cell is born with a probability given by the parameters in the config and the current cell count
 
+        # First get current blue and green cell counts
+        blue_cell_count = sum([1 for color in self.cell_indexes.values() if color == "b"])
+        green_cell_count = sum([1 for color in self.cell_indexes.values() if color == "aquamarine"])
 
-    def move_sCones(self):
-        new_blue_indices = set()
+        if blue_cell_count == self.s_cone_params["s_cones_final_count"]:
+            return "aquamarine"
+        elif green_cell_count == self.s_cone_params["m_cones_final_count"]:
+            return "b"
+        else:
+            print("Calculating birth probability")
+            prob_green = self.quadratic_probability(current_count=green_cell_count,
+                                                    final_count=self.s_cone_params["m_cones_final_count"], a=0.01)
 
-        def dfs_move(cell_to_move, visited = None):
-            if visited is None:
-                visited = set()
+            prob_blue = self.quadratic_probability(current_count=blue_cell_count,
+                                                   final_count=self.s_cone_params["s_cones_final_count"], a=0.01)
 
-            neighbours, neighbour_indexes = self.hex_grid.find_neighbours(cell_to_move)
-            # Sort neighbours by increasing distance from the center
-            sorted_neighbours = sorted(neighbour_indexes, key=lambda ix: self.hex_grid.calculate_distance(ix), reverse=True)
+            print(f"Green probability: {prob_green}, Blue probability: {prob_blue}")
 
-            for index in sorted_neighbours:
-                if index in visited:
-                    continue  # Skip already visited cells to prevent cycles
+            norm_prob_green, norm_prob_blue = self.normalize_probabilities(prob_green, prob_blue)
 
-                visited.add(index)
-                if index not in self.blue_indices and index not in new_blue_indices:
-                    return index  # Found a cell that can be moved
-                elif index in self.blue_indices:
-                    result = dfs_move(index, visited)
-                    if result is not None:
-                        return result  # Propagate the move up the call stack
-            return None
+            print(f"Normalized green probability: {norm_prob_green}, Normalized blue probability: {norm_prob_blue}")
+            choice = np.random.choice(['aquamarine', 'b'], p=[norm_prob_green, norm_prob_blue])
+            self.debug["birth_colors"].append(choice)
+            self.debug["birth_probabilities"].append((norm_prob_green, norm_prob_blue))
+            return choice
 
-        # Pick a random element from the blue_indices set and remove it from the set
-        while self.blue_indices:
-            cell_to_move = random.choice(list(self.blue_indices))
-            self.blue_indices.remove(cell_to_move)
-            neighbours, indexes = self.hex_grid.find_neighbours(cell_to_move)
+    def quadratic_probability(self, current_count, final_count, a, dh=0):
+        """
+        Calculate the birth probability based on a quadratic function.
 
-            allowed_moves = []
-            for index in indexes:
-                if index not in self.blue_indices and index not in new_blue_indices:
-                    allowed_moves.append(index)
+        :param current_count: Current count of cells
+        :param final_count: Final count of cells
+        :param max_probability: Maximum probability of birth
+        :param a: Determines the width of the parabola
+        :param dh: Shifts the parabola horizontally
+        :return: Probability of birth at the current count
+        """
 
-            # Pick a random element from the allowed_moves list and add it to the new_blue_indices set
-            if allowed_moves:
-                move = self.choose_move(cell_to_move, allowed_moves)
-                new_blue_indices.add(move)
-                if cell_to_move not in self.m_cones.get_green_indices():
-                    self.m_cones.add_green_index(cell_to_move)
-                else:
-                    self.m_cones.add_green_closest_to_center()
-            else:
-                if self.dfs is False:
-                    new_blue_indices.add(cell_to_move)
+        h_offset = dh + final_count / 2
+        max_probability = 1
 
-                elif self.dfs is True:
-                    # Use DFS to find a new position
-                    new_position = dfs_move(cell_to_move)
-                    if new_position is not None:
-                        new_blue_indices.add(new_position)
+        a = max_probability / ((final_count / 2)**2)
+        # Quadratic function
+        probability = -a * (current_count - h_offset) ** 2 + max_probability
+        return max(probability, 0.01)  # Ensure probability is not negative
 
-
-        self.blue_indices = new_blue_indices
-        return self.blue_indices
+    def normalize_probabilities(self, prob_green, prob_blue):
+        total_prob = prob_green + prob_blue
+        norm_prob_green = prob_green / total_prob
+        norm_prob_blue = prob_blue / total_prob
+        return norm_prob_green, norm_prob_blue
 
     def choose_move(self, cell_to_move):
         _, moves_indexes = self.hex_grid.find_neighbours(cell_to_move)
@@ -368,33 +370,13 @@ class Scones:
         return chosen_move
 
 
-class Mcones:
-    def __init__(self, hex_grid, birth_rate):
-        self.green_indices = set()
-        self.hex_grid = hex_grid
-        self.birth_rate = birth_rate
-
-    def get_green_indices(self):
-        return self.green_indices
-
-    def add_green_index(self, index):
-        self.green_indices.add(index)
-
-    def add_green_closest_to_center(self):
-        if random.random() <= self.birth_rate:
-            for index in self.hex_grid.sorted_indexes:
-                if index not in self.green_indices and index not in self.hex_grid.blue_indices:
-                    self.green_indices.add(index)
-                    break
-
-
 # Example usage
-grid = HexGrid(size=20)
+grid = HexGrid(size=35)
 s_cones_parameters = {
-    "s_cones_init_count": 20,
-    "s_cones_final_count": 160,
-    "m_cones_init_count": 20,
-    "m_cones_final_count": 1840,
+    "s_cones_init_count": 1,
+    "s_cones_final_count": 80,
+    "m_cones_init_count": 1,
+    "m_cones_final_count": 920,
 
     "m_cones_birth_rate": 0.6,
 
@@ -408,8 +390,15 @@ s_cones_parameters = {
 
 s_cones = Scones(grid, s_cones_parameters)
 grid.draw(s_cones.cell_indexes, plot=True)
-s_cones.move_cell()
-# s_cones.move_cell()
+
+i = 0
+while s_cones.stopSignal is False:
+    s_cones.move_cell()
+    if i % 50 == 0:
+        grid.draw(s_cones.cell_indexes, plot=True)
+
+    i += 1
+
 grid.draw(s_cones.cell_indexes, plot=True)
 #
 # while s_cones.current_cell_count < 2000:
