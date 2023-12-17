@@ -103,24 +103,24 @@ class HexGrid:
         if plot:
             plt.show()
         else:
-            self.save_plot(fig, green_cells)
+            self.save_plot(fig, total_cells)
 
     def save_plot(self, fig, filename):
-        plt.savefig(f'output_plots/{filename}.png')
+        plt.savefig(f'output_plots/v4/{filename}.png')
         plt.close(fig)
 
     def create_gif(self, gif_name):
-        filenames = [f for f in os.listdir('output_plots') if f.endswith('.png')]
+        filenames = [f for f in os.listdir('output_plots/v4') if f.endswith('.png')]
         # Sorting files numerically based on the number in the filename
         filenames.sort(key=lambda x: int(x.split('.')[0]))
 
         images = []
         for filename in filenames:
-            images.append(imageio.v3.imread(f'output_plots/{filename}'))
-        imageio.mimsave(f'output_plots/{gif_name}.gif', images, duration=0.5)
+            images.append(imageio.v3.imread(f'output_plots/v4/{filename}'))
+        imageio.mimsave(f'output_plots/v4/{gif_name}.gif', images, duration=0.5)
 
         for filename in filenames:
-            os.remove(f'output_plots/{filename}')
+            os.remove(f'output_plots/v4/{filename}')
 
 
 class Scones:
@@ -204,20 +204,57 @@ class Scones:
         green_indices = self.fill_circle_with_green(radius, blue_indices)
         return blue_indices
 
-    def fill_circle_with_green(self, radius, blue_indices):
-        center_x, center_y = self.hex_grid.x_center, self.hex_grid.y_center
 
-        for index, (x, y) in enumerate(self.hex_grid.hex_centers):
-            if index not in blue_indices:
-                distance_from_center = ((x - center_x) ** 2 + (y - center_y) ** 2) ** 0.5
-                if distance_from_center <= radius:
-                    self.m_cones.add_green_index(index)
-        return
-
-    def move_cell(self):
-        # Randomly select a cell to start the cascade
+    def move_cell_bfs(self):
         cell_to_move_index = random.choice(list(self.cell_indexes.keys()))
         # cell_to_move_index = self.hex_grid.find_closest_hexagon(0, 0)
+        print("Moving cell at index", cell_to_move_index)
+
+        path = self.find_shortest_path_to_empty(cell_to_move_index)
+        if path:
+            self.move_along_path(path)
+
+        self.cell_indexes[cell_to_move_index] = self.cell_birth()
+
+        if len(self.cell_indexes) > self.s_cone_params["s_cones_final_count"] + self.s_cone_params["m_cones_final_count"]:
+            self.stopSignal = True
+            return
+
+
+
+    def find_shortest_path_to_empty(self, start_index):
+        queue = deque([(start_index, [start_index])])
+        visited = set()
+
+        while queue:
+            current_index, path = queue.popleft()
+            visited.add(current_index)
+            _, neighbours = self.hex_grid.find_neighbours(current_index)
+
+            for neighbour in neighbours:
+                if neighbour not in visited:
+                    if neighbour not in self.cell_indexes:
+                        return path + [neighbour]
+                    else:
+                        queue.append((neighbour, path + [neighbour]))
+                        visited.add(neighbour)
+        return None
+
+    def move_along_path(self, path):
+        if len(path) < 2:
+            return  # No movement needed
+
+        moving_color = self.cell_indexes[path[0]]
+        for i in range(len(path) - 1, 0, -1):
+            self.cell_indexes[path[i]] = self.cell_indexes[path[i - 1]]
+
+        self.cell_indexes[path[0]] = moving_color
+        del self.cell_indexes[path[0]]
+
+    def move_cell_dfs(self):
+        # Randomly select a cell to start the cascade
+        # cell_to_move_index = random.choice(list(self.cell_indexes.keys()))
+        cell_to_move_index = self.hex_grid.find_closest_hexagon(0, 0)
         print("Moving cell at index", cell_to_move_index)
 
         moving_color = self.cell_indexes[cell_to_move_index]
@@ -228,16 +265,17 @@ class Scones:
             self.cell_indexes[move] = moving_color
         else:
             # If the spot is occupied, start a cascade move
-            self.cascade_move(move, moving_color, visited={cell_to_move_index})
+            self.cascade_move_dfs(move, moving_color, visited={cell_to_move_index})
 
         # A new cell is born that takes the place of the cell that moved
-        self.cell_indexes[cell_to_move_index] = self.cell_birth()
+        del self.cell_indexes[cell_to_move_index]
+        # self.cell_indexes[cell_to_move_index] = self.cell_birth()
+        #
+        # if len(self.cell_indexes) > self.s_cone_params["s_cones_final_count"] + self.s_cone_params["m_cones_final_count"]:
+        #     self.stopSignal = True
+        #     return
 
-        if len(self.cell_indexes) > self.s_cone_params["s_cones_final_count"] + self.s_cone_params["m_cones_final_count"]:
-            self.stopSignal = True
-            return
-
-    def cascade_move(self, current_index, moving_color, visited=None):
+    def cascade_move_dfs(self, current_index, moving_color, visited=None):
         if visited is None:
             visited = set()
 
@@ -261,7 +299,7 @@ class Scones:
                 # Continue the cascade with the color of the cell that is being displaced
                 displaced_color = self.cell_indexes[current_index]
                 self.cell_indexes[current_index] = moving_color
-                self.cascade_move(next_move, displaced_color, visited)
+                self.cascade_move_dfs(next_move, displaced_color, visited)
                 return
         return
 
@@ -279,10 +317,10 @@ class Scones:
         else:
             print("Calculating birth probability")
             prob_green = self.quadratic_probability(current_count=green_cell_count,
-                                                    final_count=self.s_cone_params["m_cones_final_count"], a=0.01)
+                                                    final_count=self.s_cone_params["m_cones_final_count"], max_probability=15)
 
             prob_blue = self.quadratic_probability(current_count=blue_cell_count,
-                                                   final_count=self.s_cone_params["s_cones_final_count"], a=0.01)
+                                                   final_count=self.s_cone_params["s_cones_final_count"], max_probability=0.5)
 
             print(f"Green probability: {prob_green}, Blue probability: {prob_blue}")
 
@@ -294,7 +332,7 @@ class Scones:
             self.debug["birth_probabilities"].append((norm_prob_green, norm_prob_blue))
             return choice
 
-    def quadratic_probability(self, current_count, final_count, a, dh=0):
+    def quadratic_probability(self, current_count, final_count, max_probability, dh=0):
         """
         Calculate the birth probability based on a quadratic function.
 
@@ -373,9 +411,9 @@ class Scones:
 # Example usage
 grid = HexGrid(size=35)
 s_cones_parameters = {
-    "s_cones_init_count": 1,
+    "s_cones_init_count": 20,
     "s_cones_final_count": 80,
-    "m_cones_init_count": 1,
+    "m_cones_init_count": 800,
     "m_cones_final_count": 920,
 
     "m_cones_birth_rate": 0.6,
@@ -391,23 +429,21 @@ s_cones_parameters = {
 s_cones = Scones(grid, s_cones_parameters)
 grid.draw(s_cones.cell_indexes, plot=True)
 
+# s_cones.move_cell_bfs()
+# grid.draw(s_cones.cell_indexes, plot=True)
+#
+# for i in range(20):
+#     s_cones.move_cell_bfs()
+#     grid.draw(s_cones.cell_indexes, plot=True)
+
 i = 0
 while s_cones.stopSignal is False:
-    s_cones.move_cell()
+    s_cones.move_cell_bfs()
     if i % 50 == 0:
-        grid.draw(s_cones.cell_indexes, plot=True)
+        grid.draw(s_cones.cell_indexes, plot=False)
 
     i += 1
 
-grid.draw(s_cones.cell_indexes, plot=True)
-#
-# while s_cones.current_cell_count < 2000:
-#     grid.draw(s_cones.move_sCones(), s_cones.m_cones.get_green_indices())
-#
-# grid.create_gif(f"scones_v14_gauss_"
-#                 f"{s_cones.m_cones.birth_rate}"
-#                 f"br_{grid.size}_"
-#                 f"m={s_cones_parameters['m']}_"
-#                 f"a={s_cones_parameters['a']}_"
-#                 f"c={s_cones_parameters['c']}_"
-#                 f"init={s_cones_parameters['init_mode']}")
+grid.draw(s_cones.cell_indexes, plot=False)
+grid.create_gif(f"scones_v2_test")
+
