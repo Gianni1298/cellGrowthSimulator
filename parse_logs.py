@@ -16,5 +16,5 @@ def parse_file_and_find_min_variance(filename):
 
 
 # Example usage (the file path needs to be correct for actual use)
-min_variance_row = parse_file_and_find_min_variance("parameter_optimization_log.txt")
+min_variance_row = parse_file_and_find_min_variance("parameter_optimization_log_v4.txt")
 print(min_variance_row)

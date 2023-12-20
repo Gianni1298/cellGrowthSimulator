@@ -1,134 +1,14 @@
 import random
-import numpy as np
-import matplotlib.pyplot as plt
-from hexalattice.hexalattice import *
 from collections import deque
-import os
-import imageio
+
+from hexalattice.hexalattice import *
 
 
-class HexGrid:
-    def __init__(self, size):
-        self.size = size
-        self.hex_centers, _ = self.generate_hex_centers(self.size)
-        self.blue_indices = []
-        self.x_center, self.y_center = self.hex_centers[:, 0].mean(), self.hex_centers[:, 1].mean()
-        self.sorted_distances, self.sorted_indexes = self.get_sorted_distances()
-
-    def generate_hex_centers(self, size):
-        # Generate hexagon centers
-        return create_hex_grid(nx=self.size, ny=self.size, do_plot=False)
-
-    def find_hexagon_index(self, x, y):
-        # Find the index of the hexagon at the specified coordinates, if it exists
-        mask = np.isclose(self.hex_centers[:, 0], x) & np.isclose(self.hex_centers[:, 1], y)
-        if np.any(mask):
-            index = np.where(mask)[0][0]
-            return index
-        return None
-
-    def find_closest_hexagon(self, x, y):
-        # Calculate distances from the point (x, y) to each hex center
-        distances = np.sqrt((self.hex_centers[:, 0] - x) ** 2 + (self.hex_centers[:, 1] - y) ** 2)
-
-        # Find the index of the closest hexagon
-        closest_index = np.argmin(distances)
-
-        return closest_index
-
-    def find_neighbour(self, x, y, dx, dy):
-        # Check if a neighbour exists at a specified offset
-        neighbour_x, neighbour_y = x + dx, y + dy
-
-        index = self.find_hexagon_index(neighbour_x, neighbour_y)
-        if index:
-            return self.hex_centers[index]
-        return None
-
-    def find_neighbours(self, hex_ix):
-        # Find the neighbors of the hexagon at the specified index
-        x, y = self.hex_centers[hex_ix]
-
-        # Directions for hexagonal grid neighbors
-        directions = [(1, 0),  # Right
-                      (-1, 0),  # Left
-                      (0.5, np.sqrt(3) / 2),  # Top right
-                      (-0.5, np.sqrt(3) / 2),  # Top left
-                      (0.5, -np.sqrt(3) / 2),  # Bottom right
-                      (-0.5, -np.sqrt(3) / 2)]  # Bottom left
-
-        neighbors = []
-        indexes = []
-        for dx, dy in directions:
-            neighbour = self.find_neighbour(x, y, dx, dy)
-            if neighbour is not None:
-                neighbors.append(neighbour)
-                indexes.append(self.find_hexagon_index(neighbour[0], neighbour[1]))
-
-        return neighbors, indexes
-
-    def calculate_distance(self, index):
-        # Calculate the radial distance from the center of the grid
-        center_x = self.x_center
-        center_y = self.y_center
-        distance = ((self.hex_centers[index, 0] - center_x) ** 2 + (self.hex_centers[index, 1] - center_y) ** 2) ** 0.5
-        return distance
-
-    def get_sorted_distances(self):
-        # Calculate the radial distances from the center of the grid
-        center_x = self.hex_centers[:, 0].mean()
-        center_y = self.hex_centers[:, 1].mean()
-        distances = ((self.hex_centers[:, 0] - center_x) ** 2 + (self.hex_centers[:, 1] - center_y) ** 2) ** 0.5
-
-        [distances, indexes] = zip(*sorted(zip(distances, range(len(distances)))))
-
-        return distances, indexes
-
-    def draw(self, cell_indexes, plot=False):
-        hex_centers = self.hex_centers
-        # Color the selected hexagons blue and the rest white
-        colors = [cell_indexes.get(i, 'w') for i in range(len(hex_centers))]
-
-        # Now plot the hexagonal grid with the specified colors
-        fig, ax = plt.subplots()
-        plot_single_lattice_custom_colors(hex_centers[:, 0], hex_centers[:, 1],
-                                          face_color=colors,
-                                          edge_color='w',  # Keep the edges black for visibility
-                                          min_diam=0.9,
-                                          plotting_gap=0,
-                                          rotate_deg=0)
-
-        total_cells = len(cell_indexes)
-        green_cells = sum([1 for color in cell_indexes.values() if color == "aquamarine"])
-        blue_cells = sum([1 for color in cell_indexes.values() if color == "b"])
-        plt.title(f'Hexagonal Grid Size {total_cells} total cells. Green = {green_cells}, Blue = {blue_cells}')
-        if plot:
-            plt.show()
-        else:
-            self.save_plot(fig, total_cells)
-
-    def save_plot(self, fig, filename):
-        plt.savefig(f'output_plots/v4/{filename}.png')
-        plt.close(fig)
-
-    def create_gif(self, gif_name):
-        filenames = [f for f in os.listdir('output_plots/v4') if f.endswith('.png')]
-        # Sorting files numerically based on the number in the filename
-        filenames.sort(key=lambda x: int(x.split('.')[0]))
-
-        images = []
-        for filename in filenames:
-            images.append(imageio.v3.imread(f'output_plots/v4/{filename}'))
-        imageio.mimsave(f'output_plots/v4/{gif_name}.gif', images, duration=0.5)
-
-        for filename in filenames:
-            os.remove(f'output_plots/v4/{filename}')
-
-
-class Scones:
+class Cells:
     def __init__(self, hex_grid, s_cone_params):
         self.hex_grid = hex_grid
         self.s_cone_params = s_cone_params
+        self.final_cell_count = s_cone_params["s_cones_final_count"] + s_cone_params["m_cones_final_count"]
         self.cell_indexes = self.init(s_cone_params["init_mode"])  # Map of cell indexes to cell color {index: color}
         print(self.cell_indexes)
         self.debug = {"birth_colors": [], "birth_probabilities": []}
@@ -201,7 +81,7 @@ class Scones:
         return blue_indices
 
 
-    def move_cell_bfs(self):
+    def move_cell_bfs(self, savePlot=False):
         cell_to_move_index = random.choice(list(self.cell_indexes.keys()))
         # cell_to_move_index = self.hex_grid.find_closest_hexagon(0, 0)
 
@@ -215,6 +95,9 @@ class Scones:
             self.stopSignal = True
             return
 
+        if savePlot:
+            if len(self.cell_indexes) % 10 == 0 or len(self.cell_indexes) >= self.final_cell_count:
+                self.hex_grid.draw(self.cell_indexes)
 
 
     def find_shortest_path_to_empty(self, start_index):
@@ -399,47 +282,4 @@ class Scones:
         # Choose a move based on the probabilities
         chosen_move = np.random.choice(sorted_moves, p=probabilities)
         return chosen_move
-
-
-# Example usage
-grid = HexGrid(size=40)
-s_cones_parameters = {
-    "s_cones_init_count": 1,
-    "m_cones_init_count": 900,
-
-    "s_cones_final_count": 80,
-    "m_cones_final_count": 920,
-
-    "init_mode": "bfs",
-    "max_probability": 0.5
-}
-
-s_cones = Scones(grid, s_cones_parameters)
-# grid.draw(s_cones.cell_indexes, plot=True)
-
-# s_cones.move_cell_bfs()
-# grid.draw(s_cones.cell_indexes, plot=True)
-#
-# for i in range(20):
-#     s_cones.move_cell_bfs()
-#     grid.draw(s_cones.cell_indexes, plot=True)
-
-i = 0
-while s_cones.stopSignal is False:
-    s_cones.move_cell_bfs()
-    if i % 50 == 0:
-        grid.draw(s_cones.cell_indexes, plot=False)
-
-    i += 1
-
-grid.draw(s_cones.cell_indexes, plot=False)
-
-grid.create_gif(f"scones_v2_sConesInit={s_cones_parameters['s_cones_init_count']}_"
-                f"mConesInit={s_cones_parameters['m_cones_init_count']}_"
-                f"sConesFinal={s_cones_parameters['s_cones_final_count']}_"
-                f"mConesFinal={s_cones_parameters['m_cones_final_count']}_"
-                f"maxProb={s_cones_parameters['max_probability']}_"
-                f"gridSize={grid.size}")
-
-
 
