@@ -56,3 +56,23 @@ def createCDFPlot(areas, string_params):
 
     plt.savefig(file_path)
     plt.close()
+
+def createFTPlot(freq_x, ft_magnitude_summed, string_params):
+    plt.figure()
+    plt.bar(freq_x, ft_magnitude_summed, width=np.diff(freq_x)[0])
+    plt.xlabel('Frequency')
+    plt.ylabel('Magnitude')
+    plt.title('Fourier Transform of Cell Density')
+    plt.grid(True)
+
+    # Increment filename if file already exists
+    base_name = 'FT'
+    counter = 1
+    path = 'output_plots/v4/ft'
+    file_path = os.path.join(path, f'{base_name}_{string_params}_{counter}.png')
+    while os.path.exists(file_path):
+        counter += 1
+        file_path = os.path.join(path, f'{base_name}_{string_params}_{counter}.png')
+
+    plt.savefig(file_path)
+    plt.close()

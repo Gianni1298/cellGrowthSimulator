@@ -4,17 +4,17 @@ def run_single_simulation():
     grid_size = 45
 
     cells_parameters = {
-        "s_cones_init_count": 10,
-        "m_cones_init_count": 0,
+        "s_cones_init_count": 1,
+        "m_cones_init_count": 900,
 
-        "s_cones_final_count": 10,
+        "s_cones_final_count": 80,
         "m_cones_final_count": 920,
 
         "init_mode": "bfs",
         "max_probability": 0.1
     }
 
-    run_simulation(cells_parameters, grid_size, writeLogs=False, createGif=True, createCDF=True)
+    run_simulation(cells_parameters, grid_size, writeLogs=True, createGif=True, createCDF=True, FTPlot=True)
 
 
 if __name__ == "__main__":

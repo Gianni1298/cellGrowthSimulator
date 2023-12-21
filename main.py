@@ -3,7 +3,7 @@ from expandGridV3 import HexGrid, Scones
 import numpy as np
 from voronoi import calculate_voronoi_areas, calculate_area_variance
 import itertools
-import logging
+import mylogging
 
 # Setting up logging
 logging.basicConfig(filename='parameter_optimization_log.txt', level=logging.INFO)
