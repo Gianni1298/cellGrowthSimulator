@@ -58,10 +58,33 @@ def createCDFPlot(areas, string_params):
     plt.savefig(file_path)
     plt.close()
 
-def createVoronoiPlot(vor, string_params):
-    plt.figure()
-    voronoi_plot_2d(vor)
-    plt.title('Voronoi Diagram')
+def createVoronoiPlot(vor, grid_bounds, string_params):
+    xmin, xmax, ymin, ymax = grid_bounds
+    # Create a figure with two subplots
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+
+    # First subplot: Custom Voronoi plot within grid bounds
+    for region in vor.regions:
+        if not -1 in region and len(region) > 0:
+            polygon = [vor.vertices[i] for i in region] + [vor.vertices[region[0]]]
+            if all(xmin <= x <= xmax and ymin <= y <= ymax for x, y in polygon):
+                ax1.fill(*zip(*polygon), alpha=0.4) # Fill the polygon
+                ax1.plot(*zip(*polygon), color='black', markersize=0.8)  # Plot the edges
+
+    # Plot the centers of the Voronoi regions
+    ax1.plot(vor.points[:, 0], vor.points[:, 1], 'ko', markersize=3)  # 'ko' for black dots
+
+    ax1.set_xlim(xmin, xmax)
+    ax1.set_ylim(ymin, ymax)
+    ax1.set_title('Filtered Voronoi Diagram')
+
+    # Second subplot: Standard Voronoi plot
+    voronoi_plot_2d(vor, ax=ax2)
+    ax2.set_title('Standard Voronoi Diagram')
+
+    # Layout adjustments
+    plt.tight_layout()
+
 
     # Increment filename if file already exists
     base_name = 'voronoi'

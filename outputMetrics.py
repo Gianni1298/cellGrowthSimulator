@@ -30,14 +30,14 @@ class outputMetrics:
 
     def calculate_voronoi_areas(self, createCDF, plotVoronoi):
         vor = Voronoi(self.points)
-        areas = calculate_voronoi_areas(vor)
+        areas = calculate_voronoi_areas(vor, self.cells.hex_grid.grid_bounds)
         variance = calculate_area_variance(areas)
 
         if createCDF:
             createCDFPlot(areas, self.string_params)
 
         if plotVoronoi:
-            createVoronoiPlot(vor, self.string_params)
+            createVoronoiPlot(vor, self.cells.hex_grid.grid_bounds, self.string_params)
 
         return areas, variance
 
@@ -56,12 +56,14 @@ class outputMetrics:
         return np.array([frequency, total_magnitude]).T
 
 
-def calculate_voronoi_areas(vor):
+def calculate_voronoi_areas(vor, grid_bounds):
+    xmin, xmax, ymin, ymax = grid_bounds
     areas = []
     for region in vor.regions:
         if not -1 in region and len(region) > 0:
             polygon = [vor.vertices[i] for i in region]
-            areas.append(Polygon(polygon).area)
+            if all(xmin <= x <= xmax and ymin <= y <= ymax for x, y in polygon):
+                areas.append(Polygon(polygon).area)
     return areas
 
 def calculate_area_variance(areas):
