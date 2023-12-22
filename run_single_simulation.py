@@ -1,9 +1,10 @@
 from runSimulation import run_simulation
 
 def run_single_simulation():
-    grid_size = 45
 
-    cells_parameters = {
+    params = {
+        "grid_size": 45,
+
         "s_cones_init_count": 1,
         "m_cones_init_count": 600,
 
@@ -14,7 +15,7 @@ def run_single_simulation():
         "max_probability": 0.1
     }
 
-    run_simulation(cells_parameters, grid_size, writeLogs=True, createGif=True, plotVoronoi=True, createCDF=True, FTPlot=True)
+    run_simulation(params, writeLogs=True, createGif=True, plotVoronoi=True, createCDF=True, FTPlot=True)
 
 
 if __name__ == "__main__":

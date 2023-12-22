@@ -10,25 +10,19 @@ import itertools
 
 
 # Function to run the simulation with given parameters
-def run_simulation(cells_parameters, grid_size, writeLogs=False, createGif=False, plotVoronoi=False, createCDF=False,
+def run_simulation(params, writeLogs=False, createGif=False, plotVoronoi=False, createCDF=False,
                    FTPlot=False):
-    grid = HexGrid(size=grid_size)
+    grid = HexGrid(size=params['grid_size'])
 
-    cells = Cells(grid, cells_parameters)
+    cells = Cells(grid, params)
 
     while cells.stopSignal is False:
         cells.move_cell_bfs(savePlot=createGif)
 
-    string_params = f"sConesInit={cells_parameters['s_cones_init_count']}_" \
-                    f"mConesInit={cells_parameters['m_cones_init_count']}_" \
-                    f"sConesFinal={cells_parameters['s_cones_final_count']}_" \
-                    f"mConesFinal={cells_parameters['m_cones_final_count']}_" \
-                    f"maxProb={cells_parameters['max_probability']}_" \
-                    f"gridSize={grid.size}"
 
     blue_cells = [i for i in cells.cell_indexes.keys() if cells.cell_indexes[i] == 'b']
 
-    output_metrics = outputMetrics(cells, blue_cells, string_params)
+    output_metrics = outputMetrics(cells, blue_cells, params)
     if createGif:
         output_metrics.create_gif()
     voronoi_areas, voronoi_variance = output_metrics.calculate_voronoi_areas(createCDF, plotVoronoi)
@@ -36,5 +30,5 @@ def run_simulation(cells_parameters, grid_size, writeLogs=False, createGif=False
 
     if writeLogs:
         logger = Logger('logs.csv')
-        logger.log_results(cells_parameters, grid_size, cells.cell_indexes, blue_cells, voronoi_areas, voronoi_variance,
+        logger.log_results(params, cells.cell_indexes, blue_cells, voronoi_areas, voronoi_variance,
                            FTFrequencies)

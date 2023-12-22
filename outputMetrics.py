@@ -8,14 +8,25 @@ from plotHelpers import createCDFPlot, createFTPlot, createVoronoiPlot, create_g
 
 
 class outputMetrics:
-    def __init__(self, cells, blue_cells, string_params):
+    def __init__(self, cells, blue_cells, params):
         self.cells = cells
         self.blue_cells = blue_cells
         self.points = np.array([self.cells.hex_grid.hex_centers[i] for i in self.blue_cells])
-        self.string_params = string_params
+        self.params = params
+        self.string_params = self.create_string_params()
 
     def create_gif(self):
         create_gif(self.string_params)
+
+    def create_string_params(self):
+        string_params = f"sConesInit={self.params['s_cones_init_count']}_" \
+                        f"mConesInit={self.params['m_cones_init_count']}_" \
+                        f"sConesFinal={self.params['s_cones_final_count']}_" \
+                        f"mConesFinal={self.params['m_cones_final_count']}_" \
+                        f"maxProb={self.params['max_probability']}_" \
+                        f"gridSize={self.params['grid_size']}"
+
+        return string_params
 
     def calculate_voronoi_areas(self, createCDF, plotVoronoi):
         vor = Voronoi(self.points)
