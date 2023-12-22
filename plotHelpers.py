@@ -118,3 +118,25 @@ def createFTPlot(frequency, total_magnitude, string_params):
 
     plt.savefig(file_path)
     plt.close()
+
+def createNNAPlot(points, nearest_neighbor_distances, R):
+    plt.figure()
+    plt.scatter(points[:, 0], points[:, 1], label='Cells')
+    for point, distance in zip(points, nearest_neighbor_distances):
+        circle = plt.Circle(point, distance, color='r', fill=False, linestyle='--', linewidth=0.5)
+        plt.gca().add_patch(circle)
+
+    plt.title(f'Nearest Neighbor Analysis (R = {R:.2f})')
+    plt.legend()
+
+    # Increment filename if file already exists
+    base_name = 'NNA'
+    counter = 1
+    path = 'output_plots/v4/nna'
+    file_path = os.path.join(path, f'{base_name}_{counter}.png')
+    while os.path.exists(file_path):
+        counter += 1
+        file_path = os.path.join(path, f'{base_name}_{counter}.png')
+
+    plt.savefig(file_path)
+    plt.close()

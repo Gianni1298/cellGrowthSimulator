@@ -10,9 +10,10 @@ class myLogger:
         self.writer = csv.writer(self.file, delimiter='|')
         if os.stat(filename).st_size == 0:
             self.writer.writerow(['gridSize', 'sConesInit','mConesInit', 'sConesFinal','mConesFinal','maxProb',
-                                  'cell_indexes', 'blueHexCenters','voronoi areas','voronoi area variance','FTFreq-Magnitude'])
+                                  'cell_indexes', 'blueHexCenters','voronoi areas','voronoi area variance','FTFreq-Magnitude',
+                                  'NNA distances', 'R_NNA'])
 
-    def log_results(self, parameters, cell_indexes, blue_cell_indexes, voronoi_areas, voronoi_variance, FTFrequencies):
+    def log_results(self, parameters, cell_indexes, blue_cell_indexes, voronoi_areas, voronoi_variance, FTFrequencies, neareast_neigbour_distances, R_NNA):
         # Convert arrays to strings
 
         voronoi_areas_str = ','.join(map(str, voronoi_areas))
@@ -28,7 +29,9 @@ class myLogger:
                         f"{blue_cell_indexes}",
                         f"{voronoi_areas_str}",
                         f"{voronoi_variance}",
-                        f"{FTFrequencies}"])
+                        f"{FTFrequencies}",
+                        f"{neareast_neigbour_distances}",
+                        f"{R_NNA}"])
 
     def close(self):
         self.file.close()
