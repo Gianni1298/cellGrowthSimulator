@@ -4,7 +4,7 @@ import numpy as np
 from scipy.interpolate import griddata
 from scipy.fftpack import fft2, fftshift
 
-from plotHelpers import createCDFPlot, createFTPlot, createVoronoiPlot
+from plotHelpers import createCDFPlot, createFTPlot, createVoronoiPlot, create_gif
 
 
 class outputMetrics:
@@ -13,6 +13,9 @@ class outputMetrics:
         self.blue_cells = blue_cells
         self.points = np.array([self.cells.hex_grid.hex_centers[i] for i in self.blue_cells])
         self.string_params = string_params
+
+    def create_gif(self):
+        create_gif(self.string_params)
 
     def calculate_voronoi_areas(self, createCDF, plotVoronoi):
         vor = Voronoi(self.points)
