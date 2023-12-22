@@ -105,3 +105,18 @@ class HexGrid:
             plt.show()
         else:
             save_plot(fig, total_cells)
+
+    def calculate_hex_grid_bounds(self):
+        # Assuming each hexagon has a unit diameter
+        diameter = 1
+        vertical_distance = 0.75 * diameter
+
+        # Horizontal extent (x-axis)
+        xmax = xmax = (self.size - 1) * diameter / 2
+        xmin = -xmax
+
+        # Vertical extent (y-axis) - slightly more complex due to hexagonal staggering
+        ymax = (self.size - 1) * vertical_distance / 2
+        ymin = -ymax
+
+        return xmin, xmax, ymin, ymax
