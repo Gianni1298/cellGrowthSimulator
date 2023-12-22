@@ -10,6 +10,7 @@ class HexGrid:
     def __init__(self, size):
         self.size = size
         self.hex_centers, _ = self.generate_hex_centers(self.size)
+        self.grid_bounds = self.calculate_hex_grid_bounds()
         self.blue_indices = []
         self.x_center, self.y_center = self.hex_centers[:, 0].mean(), self.hex_centers[:, 1].mean()
         self.sorted_distances, self.sorted_indexes = self.get_sorted_distances()
