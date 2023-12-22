@@ -11,7 +11,7 @@ import itertools
 
 
 # Function to run the simulation with given parameters
-def run_simulation(cells_parameters, grid_size, writeLogs=False, createGif=False, createCDF=False, FTPlot=False):
+def run_simulation(cells_parameters, grid_size, writeLogs=False, createGif=False, plotVoronoi=False, createCDF=False, FTPlot=False):
     grid = HexGrid(size=grid_size)
 
     cells = Cells(grid, cells_parameters)
@@ -32,7 +32,7 @@ def run_simulation(cells_parameters, grid_size, writeLogs=False, createGif=False
     blue_cells = [i for i in cells.cell_indexes.keys() if cells.cell_indexes[i] == 'b']
 
     output_metrics = outputMetrics(cells, blue_cells, string_params)
-    voronoi_areas, voronoi_variance = output_metrics.calculate_voronoi_areas(createCDF)
+    voronoi_areas, voronoi_variance = output_metrics.calculate_voronoi_areas(createCDF, plotVoronoi)
     FTFrequencies = output_metrics.calculate_FT_transform_frequencies(FTPlot)
 
     if writeLogs:

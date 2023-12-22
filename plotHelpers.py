@@ -3,6 +3,7 @@ import os
 import imageio
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy.spatial import voronoi_plot_2d
 
 
 def save_plot(fig, filename):
@@ -57,9 +58,27 @@ def createCDFPlot(areas, string_params):
     plt.savefig(file_path)
     plt.close()
 
-def createFTPlot(freq_x, ft_magnitude_summed, string_params):
+def createVoronoiPlot(vor, string_params):
     plt.figure()
-    plt.bar(freq_x, ft_magnitude_summed, width=np.diff(freq_x)[0])
+    voronoi_plot_2d(vor)
+    plt.title('Voronoi Diagram')
+
+    # Increment filename if file already exists
+    base_name = 'voronoi'
+    counter = 1
+    path = 'output_plots/v4/voronoi'
+    file_path = os.path.join(path, f'{base_name}_{string_params}_{counter}.png')
+    while os.path.exists(file_path):
+        counter += 1
+        file_path = os.path.join(path, f'{base_name}_{string_params}_{counter}.png')
+
+    plt.savefig(file_path)
+    plt.close()
+
+
+def createFTPlot(frequency, total_magnitude, string_params):
+    plt.figure()
+    plt.stem(frequency, total_magnitude, 'b', markerfmt=" ", basefmt=" ")
     plt.xlabel('Frequency')
     plt.ylabel('Magnitude')
     plt.title('Fourier Transform of Cell Density')

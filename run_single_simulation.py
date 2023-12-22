@@ -5,7 +5,7 @@ def run_single_simulation():
 
     cells_parameters = {
         "s_cones_init_count": 1,
-        "m_cones_init_count": 900,
+        "m_cones_init_count": 600,
 
         "s_cones_final_count": 80,
         "m_cones_final_count": 920,
@@ -14,7 +14,7 @@ def run_single_simulation():
         "max_probability": 0.1
     }
 
-    run_simulation(cells_parameters, grid_size, writeLogs=True, createGif=True, createCDF=True, FTPlot=True)
+    run_simulation(cells_parameters, grid_size, writeLogs=True, createGif=True, plotVoronoi=True, createCDF=True, FTPlot=True)
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@ import numpy as np
 from scipy.interpolate import griddata
 from scipy.fftpack import fft2, fftshift
 
-from plotHelpers import createCDFPlot, createFTPlot
+from plotHelpers import createCDFPlot, createFTPlot, createVoronoiPlot
 
 
 class outputMetrics:
@@ -14,7 +14,7 @@ class outputMetrics:
         self.points = np.array([self.cells.hex_grid.hex_centers[i] for i in self.blue_cells])
         self.string_params = string_params
 
-    def calculate_voronoi_areas(self, createCDF):
+    def calculate_voronoi_areas(self, createCDF, plotVoronoi):
         vor = Voronoi(self.points)
         areas = calculate_voronoi_areas(vor)
         variance = calculate_area_variance(areas)
@@ -22,29 +22,24 @@ class outputMetrics:
         if createCDF:
             createCDFPlot(areas, self.string_params)
 
+        if plotVoronoi:
+            createVoronoiPlot(vor, self.string_params)
+
         return areas, variance
 
     def calculate_FT_transform_frequencies(self, FTPlot):
-        # Create a 2D grid for interpolation
-        grid_x, grid_y = np.mgrid[min(self.points[:, 0]):max(self.points[:, 0]):100j,
-                         min(self.points[:, 1]):max(self.points[:, 1]):100j]
+        fourier_transform = np.fft.fft2(self.points)
 
-        # Interpolate onto the grid
-        grid_z = griddata(self.points, np.ones(len(self.points)), (grid_x, grid_y), method='nearest')
-
-        # Apply 2D Fourier Transform
-        ft = fftshift(fft2(grid_z))
-
-        # Calculate the frequencies and magnitudes
-        freq_x = np.fft.fftfreq(grid_x.shape[0], d=(grid_x[1,0] - grid_x[0,0])/grid_x.shape[0])
-        ft_magnitude = np.abs(ft)
-        ft_magnitude_summed = np.sum(ft_magnitude, axis=0)
+        # Compute magnitude and frequency
+        magnitude = np.abs(fourier_transform) # Magnitude for x and y components
+        total_magnitude = magnitude[:, 0] + magnitude[:, 1]
+        frequency = np.fft.fftfreq(self.points.shape[0])
 
         if FTPlot:
-            createFTPlot(freq_x, ft_magnitude_summed, self.string_params)
+            createFTPlot(frequency, total_magnitude, self.string_params)
 
         # Return a np.array of frequencies and magnitudes like the following np.array([freq1, mag1], [freq2, mag2], ...)
-        return np.array([freq_x, ft_magnitude_summed]).T
+        return np.array([frequency, total_magnitude]).T
 
 
 def calculate_voronoi_areas(vor):
