@@ -56,31 +56,6 @@ class Cells:
 
         return cell_indexes
 
-
-    def random_init(self):
-        # Not implemented in this current version!! ###
-        blue_indices = set()
-        blue_cells_to_place = self.s_cone_count
-
-        # Calculate the radius of the circle for initialization
-        radius = self.hex_grid.size // 4  # You can adjust this as needed
-
-        while blue_cells_to_place > 0:
-            # Generate a random point
-            random_x = random.uniform(-self.hex_grid.size / 2, self.hex_grid.size / 2)
-            random_y = random.uniform(-self.hex_grid.size / 2, self.hex_grid.size / 2)
-
-            # Check if the point is within the circle
-            if (random_x ** 2 + random_y ** 2) <= radius ** 2:
-                index = self.hex_grid.find_closest_hexagon(random_x, random_y)
-                if index not in blue_indices:
-                    blue_indices.add(index)
-                    blue_cells_to_place -= 1
-
-        green_indices = self.fill_circle_with_green(radius, blue_indices)
-        return blue_indices
-
-
     def move_cell_bfs(self, savePlot=False):
         cell_to_move_index = random.choice(list(self.cell_indexes.keys()))
         # cell_to_move_index = self.hex_grid.find_closest_hexagon(0, 0)
