@@ -38,7 +38,6 @@ class outputMetrics:
 
     def calculate_voronoi_areas(self, createCDF, plotVoronoi):
         vor = Voronoi(self.points)
-        cell_perimeter = self.cells.hex_grid.get_perimeter_points()
         areas = calculate_voronoi_areas(vor, self.cells.hex_grid.grid_bounds)
         variance = calculate_area_variance(areas)
 
