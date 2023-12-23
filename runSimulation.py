@@ -28,7 +28,7 @@ def run_simulation(params, writeLogs=False, createGif=False, plotVoronoi=False, 
 
     voronoi_areas, voronoi_variance = output_metrics.calculate_voronoi_areas(createCDF, plotVoronoi)
     FTFrequencies = output_metrics.calculate_FT_transform_frequencies(FTPlot)
-    neareast_neigbour_distances, R_NNA = output_metrics.calculate_NNA(NNAPlot)
+    neareast_neigbour_distances, R_NNA = output_metrics.calculate_NNA_v2(NNAPlot)
 
     if writeLogs:
         logger = Logger('logs.csv')

@@ -1,3 +1,5 @@
+from datetime import time, datetime
+
 from scipy.spatial import Voronoi, KDTree
 from shapely import Polygon
 import numpy as np
@@ -6,9 +8,11 @@ from scipy.fftpack import fft2, fftshift
 import scipy.spatial
 import libpysal as ps
 import numpy as np
-from pointpats import PointPattern, PoissonPointProcess, as_window, G, F, J, K, L, Genv, Fenv, Jenv, Kenv, Lenv
 
-from plotHelpers import createCDFPlot, createFTPlot, createVoronoiPlot, create_gif, createNNAPlot
+from pointpats import PointPattern, PoissonPointProcess, as_window, g_test, f_test, j_test, k_test, l_test
+    # , Genv, Fenv, Jenv, Kenv, Lenv
+
+from plotHelpers import createCDFPlot, createFTPlot, createVoronoiPlot, create_gif, createNNAPlot, createRipleyPlots
 
 
 class outputMetrics:
@@ -34,6 +38,7 @@ class outputMetrics:
 
     def calculate_voronoi_areas(self, createCDF, plotVoronoi):
         vor = Voronoi(self.points)
+        cell_perimeter = self.cells.hex_grid.get_perimeter_points()
         areas = calculate_voronoi_areas(vor, self.cells.hex_grid.grid_bounds)
         variance = calculate_area_variance(areas)
 
@@ -80,6 +85,25 @@ class outputMetrics:
             createNNAPlot(self.points, nearest_neighbor_distances, R)
 
         return nearest_neighbor_distances, R
+
+    def calculate_NNA_v2(self, NNAPlot):
+        pp = PointPattern(self.points)
+
+        print(f"Started calculating NNA at {datetime.now()}")
+        # Calculate the various Ripley functions
+        ripleyG = g_test(self.points, support=40, keep_simulations=True, n_simulations=1000, hull='convex') # Ripley's G function in the format of [x, y] pairs
+        ripleyF = f_test(self.points, support=40, keep_simulations=True, n_simulations=1000, hull='convex')
+        ripleyJ = j_test(self.points, support=40, keep_simulations=True, n_simulations=1000, hull='convex')
+        ripleyK = k_test(self.points, support=40, keep_simulations=True, n_simulations=1000, hull='convex')
+        ripleyL = l_test(self.points, support=40, keep_simulations=True, n_simulations=1000, hull='convex')
+
+        print(f"Finished calculating NNA at {datetime.now()}")
+
+        if NNAPlot:
+            createRipleyPlots(self.points, pp.nnd, ripleyG, ripleyF, ripleyJ, ripleyK, ripleyL, self.string_params)
+
+        return 1, 2
+
 
 def calculate_voronoi_areas(vor, grid_bounds):
     xmin, xmax, ymin, ymax = grid_bounds

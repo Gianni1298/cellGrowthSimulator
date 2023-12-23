@@ -6,7 +6,7 @@ def run_single_simulation():
         "grid_size": 40,
 
         "s_cones_init_count": 1,
-        "m_cones_init_count": 50,
+        "m_cones_init_count": 1,
 
         "s_cones_final_count": 80,
         "m_cones_final_count": 920,

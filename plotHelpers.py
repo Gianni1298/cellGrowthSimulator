@@ -119,24 +119,125 @@ def createFTPlot(frequency, total_magnitude, string_params):
     plt.savefig(file_path)
     plt.close()
 
-def createNNAPlot(points, nearest_neighbor_distances, R):
+def createNNAPlot(points, nearest_neighbor_distances, string_params):
     plt.figure()
     plt.scatter(points[:, 0], points[:, 1], label='Cells')
     for point, distance in zip(points, nearest_neighbor_distances):
         circle = plt.Circle(point, distance, color='r', fill=False, linestyle='--', linewidth=0.5)
         plt.gca().add_patch(circle)
 
-    plt.title(f'Nearest Neighbor Analysis (R = {R:.2f})')
+    plt.title(f'Nearest Neighbor Analysis')
     plt.legend()
 
     # Increment filename if file already exists
     base_name = 'NNA'
     counter = 1
     path = 'output_plots/v4/nna'
-    file_path = os.path.join(path, f'{base_name}_{counter}.png')
+    file_path = os.path.join(path, f'{base_name}_{string_params}_{counter}.png')
     while os.path.exists(file_path):
         counter += 1
         file_path = os.path.join(path, f'{base_name}_{counter}.png')
 
     plt.savefig(file_path)
+    plt.close()
+
+def createRipleyPlots(points, nearest_neighbor_distances, ripleyG, ripleyF, ripleyJ, ripleyK, ripleyL, string_params):
+    # Create a figure with 6 subplots
+    fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+
+    # First subplot: Nearest neighbor distances
+    axes[0, 0].scatter(points[:, 0], points[:, 1], label='Cells')
+    for point, distance in zip(points, nearest_neighbor_distances):
+        circle = plt.Circle(point, distance, color='r', fill=False, linestyle='--', linewidth=0.5)
+        axes[0, 0].add_patch(circle)
+    axes[0, 0].set_title('Nearest Neighbor Analysis')
+    axes[0, 0].legend()
+
+    # Second subplot: Ripley's G function
+    G_middle_95pct = np.percentile(ripleyG.simulations, q=(2.5, 97.5), axis=0) # grab the middle 95% of simulations using numpy
+    # use the fill_between function to color between the 2.5% and 97.5% envelope
+    axes[0, 1].fill_between(ripleyG.support, *G_middle_95pct, color='lightgrey', label='simulated')
+
+    # plot the line for the observed value of G(d)
+    axes[0, 1].plot(ripleyG.support, ripleyG.statistic,
+             color='orangered', label='observed')
+    # and plot the support points depending on whether their p-value is smaller than .05
+    axes[0, 1].scatter(ripleyG.support, ripleyG.statistic,
+                cmap='viridis', c=ripleyG.pvalue < .01)
+    axes[0, 1].legend()
+    axes[0, 1].set_xlabel('Distance')
+    axes[0, 1].set_ylabel('G Function')
+    axes[0, 1].set_title('G Function Plot')
+
+    # Third subplot: Ripley's F function
+    F_middle_95pct = np.percentile(ripleyF.simulations, q=(2.5, 97.5), axis=0) # grab the middle 95% of simulations using numpy
+    # use the fill_between function to color between the 2.5% and 97.5% envelope
+    axes[0, 2].fill_between(ripleyF.support, *F_middle_95pct, color='lightgrey', label='simulated')
+
+    # plot the line for the observed value of F(d)
+    axes[0, 2].plot(ripleyF.support, ripleyF.statistic,
+             color='orangered', label='observed')
+    # and plot the support points depending on whether their p-value is smaller than .05
+    axes[0, 2].scatter(ripleyF.support, ripleyF.statistic,
+                cmap='viridis', c=ripleyF.pvalue < .01)
+    axes[0, 2].legend()
+    axes[0, 2].set_xlabel('Distance')
+    axes[0, 2].set_ylabel('F Function')
+    axes[0, 2].set_title('F Function Plot')
+
+    # Fourth subplot: Ripley's J function
+    # plot the line for the observed value of J(d)
+    axes[1, 0].plot(ripleyJ.support, ripleyJ.statistic, color='orangered', label='observed')
+    axes[1, 0].axhline(1, linestyle=':', color='k', label='Complete Spatial Randomness')
+    axes[1, 0].legend()
+    axes[1, 0].set_xlabel('Distance')
+    axes[1, 0].set_ylabel('J Function')
+    axes[1, 0].set_title('J Function Plot')
+
+    # Fifth subplot: Ripley's K function
+    K_middle_95pct = np.percentile(ripleyK.simulations, q=(2.5, 97.5), axis=0) # grab the middle 95% of simulations using numpy
+    # use the fill_between function to color between the 2.5% and 97.5% envelope
+    axes[1, 1].fill_between(ripleyK.support, *K_middle_95pct, color='lightgrey', label='simulated')
+
+    # plot the line for the observed value of K(d)
+    axes[1, 1].plot(ripleyK.support, ripleyK.statistic,
+             color='orangered', label='observed')
+    # and plot the support points depending on whether their p-value is smaller than .05
+    axes[1, 1].scatter(ripleyK.support, ripleyK.statistic,
+                cmap='viridis', c=ripleyK.pvalue < .01)
+    axes[1, 1].legend()
+    axes[1, 1].set_xlabel('Distance')
+    axes[1, 1].set_ylabel('K Function')
+    axes[1, 1].set_title('K Function Plot')
+
+    # Sixth subplot: Ripley's L function
+    L_middle_95pct = np.percentile(ripleyL.simulations, q=(2.5, 97.5), axis=0) # grab the middle 95% of simulations using numpy
+    # use the fill_between function to color between the 2.5% and 97.5% envelope
+    axes[1, 2].fill_between(ripleyL.support, *L_middle_95pct, color='lightgrey', label='simulated')
+
+    # plot the line for the observed value of L(d)
+    axes[1, 2].plot(ripleyL.support, ripleyL.statistic,
+             color='orangered', label='observed')
+    # and plot the support points depending on whether their p-value is smaller than .05
+    axes[1, 2].scatter(ripleyL.support, ripleyL.statistic,
+                cmap='viridis', c=ripleyL.pvalue < .01)
+    axes[1, 2].legend()
+    axes[1, 2].set_xlabel('Distance')
+    axes[1, 2].set_ylabel('L Function')
+    axes[1, 2].set_title('L Function Plot')
+
+    # Layout adjustments
+    plt.tight_layout()
+
+    # Increment filename if file already exists
+    base_name = 'ripley'
+    counter = 1
+    path = 'output_plots/v4/nna'
+    file_path = os.path.join(path, f'{base_name}_{string_params}_{counter}.png')
+    while os.path.exists(file_path):
+        counter += 1
+        file_path = os.path.join(path, f'{base_name}_{counter}.png')
+
+    plt.savefig(file_path)
+
     plt.close()
