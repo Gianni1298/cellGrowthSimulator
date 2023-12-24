@@ -90,7 +90,7 @@ class HexGrid:
         colors = [cell_indexes.get(i, 'w') for i in range(len(hex_centers))]
 
         # Now plot the hexagonal grid with the specified colors
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(12, 12))
         plot_single_lattice_custom_colors(hex_centers[:, 0], hex_centers[:, 1],
                                           face_color=colors,
                                           edge_color='w',  # Keep the edges black for visibility
