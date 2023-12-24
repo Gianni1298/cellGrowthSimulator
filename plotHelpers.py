@@ -25,10 +25,10 @@ def create_gif(gif_name):
     # Check if file exists and append a number starting from 1
     base_name = gif_name
     counter = 1
-    gif_path = os.path.join(path, f'gif/{base_name}_{counter}.gif')
+    gif_path = os.path.join(path, f'gif/gif_{base_name}_{counter}.gif')
     while os.path.exists(gif_path):
         counter += 1
-        gif_path = os.path.join(path, f'gif_{base_name}_{counter}.gif')
+        gif_path = os.path.join(path, f'gif/gif_{base_name}_{counter}.gif')
 
     imageio.mimsave(gif_path, images, duration=0.5)
 
