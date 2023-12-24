@@ -5,11 +5,13 @@ from hexalattice.hexalattice import *
 
 
 class Cells:
-    def __init__(self, hex_grid, s_cone_params):
+    def __init__(self, hex_grid, params):
         self.hex_grid = hex_grid
-        self.s_cone_params = s_cone_params
-        self.final_cell_count = s_cone_params["s_cones_final_count"] + s_cone_params["m_cones_final_count"]
-        self.cell_indexes = self.init(s_cone_params["init_mode"])  # Map of cell indexes to cell color {index: color}
+        self.params = params
+        self.final_cell_count = int(params["grid_size"] * params["grid_size"] * 0.7)
+        self.s_cones_final_count = int(self.final_cell_count * 0.08)
+        self.m_cones_final_count = int(self.final_cell_count * 0.92)
+        self.cell_indexes = self.init(params["init_mode"])  # Map of cell indexes to cell color {index: color}
         print(self.cell_indexes)
         self.debug = {"birth_colors": [], "birth_probabilities": []}
 
@@ -23,7 +25,7 @@ class Cells:
             # return self.random_init()
 
     def bfs_init(self):
-        total_cells_to_place = self.s_cone_params["s_cones_init_count"] + self.s_cone_params["m_cones_init_count"]
+        total_cells_to_place = self.params["s_cones_init_count"] + self.params["m_cones_init_count"]
 
         # Step 1: Fetch Hexagon Indexes
         indexes_to_populate = []
@@ -44,8 +46,8 @@ class Cells:
 
         # Step 2: Populate with Colors
         cell_indexes = {}
-        blue_cells_to_place = self.s_cone_params["s_cones_init_count"]
-        green_cells_to_place = self.s_cone_params["m_cones_init_count"]
+        blue_cells_to_place = self.params["s_cones_init_count"]
+        green_cells_to_place = self.params["m_cones_init_count"]
         for index in indexes_to_populate:
             if blue_cells_to_place > 0:
                 cell_indexes[index] = "b"
@@ -66,7 +68,7 @@ class Cells:
 
         self.cell_indexes[cell_to_move_index] = self.cell_birth()
 
-        if len(self.cell_indexes) > self.s_cone_params["s_cones_final_count"] + self.s_cone_params["m_cones_final_count"]:
+        if len(self.cell_indexes) > self.final_cell_count:
             self.stopSignal = True
             return
 
@@ -122,11 +124,7 @@ class Cells:
 
         # A new cell is born that takes the place of the cell that moved
         del self.cell_indexes[cell_to_move_index]
-        # self.cell_indexes[cell_to_move_index] = self.cell_birth()
-        #
-        # if len(self.cell_indexes) > self.s_cone_params["s_cones_final_count"] + self.s_cone_params["m_cones_final_count"]:
-        #     self.stopSignal = True
-        #     return
+
 
     def cascade_move_dfs(self, current_index, moving_color, visited=None):
         if visited is None:
@@ -163,16 +161,16 @@ class Cells:
         blue_cell_count = sum([1 for color in self.cell_indexes.values() if color == "b"])
         green_cell_count = sum([1 for color in self.cell_indexes.values() if color == "aquamarine"])
 
-        if blue_cell_count == self.s_cone_params["s_cones_final_count"]:
+        if blue_cell_count == self.s_cones_final_count:
             return "aquamarine"
-        elif green_cell_count == self.s_cone_params["m_cones_final_count"]:
+        elif green_cell_count == self.m_cones_final_count:
             return "b"
         else:
             prob_green = self.quadratic_probability(current_count=green_cell_count,
-                                                    final_count=self.s_cone_params["m_cones_final_count"], max_probability=1)
+                                                    final_count=self.m_cones_final_count, max_probability=1)
 
             prob_blue = self.quadratic_probability(current_count=blue_cell_count,
-                                                   final_count=self.s_cone_params["s_cones_final_count"], max_probability=self.s_cone_params["max_probability"])
+                                                   final_count=self.s_cones_final_count, max_probability=self.params["max_probability"])
 
             # print(f"Green probability: {prob_green}, Blue probability: {prob_blue}")
 
@@ -221,10 +219,10 @@ class Cells:
         cell_ratio = len(self.cell_indexes) / len(self.hex_grid.hex_centers)
 
         # Update the Gaussian wave's mean based on the green ratio and velocity m
-        mu = self.s_cone_params['m'] * cell_ratio
+        mu = self.params['m'] * cell_ratio
 
         # Calculate the 80% percentile of the Gaussian distribution
-        p80 = mu + 0.842 * self.s_cone_params['c']
+        p80 = mu + 0.842 * self.params['c']
 
         # Check the distance of the cell from the center
         current_distance = self.hex_grid.calculate_distance(cell_to_move)
@@ -245,7 +243,7 @@ class Cells:
             probabilities = []
             for move in moves_indexes:
                 distance = self.hex_grid.calculate_distance(move)
-                probability = np.exp(-((distance - mu) ** 2) / (2 * self.s_cone_params['c'] ** 2))
+                probability = np.exp(-((distance - mu) ** 2) / (2 * self.params['c'] ** 2))
                 probabilities.append(probability)
 
             # Normalize probabilities to sum up to 1

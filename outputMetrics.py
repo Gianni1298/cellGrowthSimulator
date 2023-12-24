@@ -29,8 +29,6 @@ class outputMetrics:
     def create_string_params(self):
         string_params = f"sConesInit={self.params['s_cones_init_count']}_" \
                         f"mConesInit={self.params['m_cones_init_count']}_" \
-                        f"sConesFinal={self.params['s_cones_final_count']}_" \
-                        f"mConesFinal={self.params['m_cones_final_count']}_" \
                         f"maxProb={self.params['max_probability']}_" \
                         f"gridSize={self.params['grid_size']}"
 
@@ -41,9 +39,7 @@ class outputMetrics:
         areas = calculate_voronoi_areas(vor, self.cells.hex_grid.grid_bounds)
         variance = calculate_area_variance(areas)
 
-        createCDFPlot(areas, self.string_params)
-
-        createVoronoiPlot(vor, self.cells.hex_grid.grid_bounds, self.string_params)
+        createVoronoiPlot(vor, self.cells.hex_grid.grid_bounds, areas, self.string_params)
 
         return areas, variance
 

@@ -25,16 +25,16 @@ def create_gif(gif_name):
     # Check if file exists and append a number starting from 1
     base_name = gif_name
     counter = 1
-    gif_path = os.path.join(path, 'gif', f'{base_name}_{counter}.gif')
+    gif_path = os.path.join(path, f'gif/{base_name}_{counter}.gif')
     while os.path.exists(gif_path):
         counter += 1
-        gif_path = os.path.join(path, f'{base_name}_{counter}.gif')
+        gif_path = os.path.join(path, f'gif_{base_name}_{counter}.gif')
 
     imageio.mimsave(gif_path, images, duration=0.5)
 
     # Save the last frame separately
     last_frame = images[-1]
-    last_frame_path = os.path.join(path, 'last_frames', f'{base_name}_last_frame.png')
+    last_frame_path = os.path.join(path, 'last_frames', f'last_frame_{base_name}_{counter}.png')
     imageio.v3.imwrite(last_frame_path, last_frame)
 
 
@@ -64,10 +64,10 @@ def createCDFPlot(areas, string_params):
     plt.savefig(file_path)
     plt.close()
 
-def createVoronoiPlot(vor, grid_bounds, string_params):
+def createVoronoiPlot(vor, grid_bounds, areas, string_params):
     xmin, xmax, ymin, ymax = grid_bounds
     # Create a figure with two subplots
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(20, 6))
 
     # First subplot: Custom Voronoi plot within grid bounds
     for region in vor.regions:
@@ -87,6 +87,15 @@ def createVoronoiPlot(vor, grid_bounds, string_params):
     # Second subplot: Standard Voronoi plot
     voronoi_plot_2d(vor, ax=ax2)
     ax2.set_title('Standard Voronoi Diagram')
+
+    # Third subplot: CDF
+    areas_sorted = np.sort(areas)
+    cum_probs = np.arange(1, len(areas) + 1) / len(areas)
+    ax3.plot(areas_sorted, cum_probs)
+    ax3.set_xlabel('Area')
+    ax3.set_xlim(0, 40)
+    ax3.set_ylabel('Cumulative Probability')
+    ax3.set_title('Cumulative Distribution Function of Cell Areas')
 
     # Layout adjustments
     plt.tight_layout()

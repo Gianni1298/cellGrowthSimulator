@@ -90,7 +90,7 @@ class HexGrid:
         colors = [cell_indexes.get(i, 'w') for i in range(len(hex_centers))]
 
         # Now plot the hexagonal grid with the specified colors
-        fig, ax = plt.subplots(figsize=(12, 12))
+        fig, ax = plt.subplots()
         plot_single_lattice_custom_colors(hex_centers[:, 0], hex_centers[:, 1],
                                           face_color=colors,
                                           edge_color='w',  # Keep the edges black for visibility
@@ -101,7 +101,7 @@ class HexGrid:
         total_cells = len(cell_indexes)
         green_cells = sum([1 for color in cell_indexes.values() if color == "aquamarine"])
         blue_cells = sum([1 for color in cell_indexes.values() if color == "b"])
-        plt.title(f'Hexagonal Grid Size {total_cells} total cells. Green = {green_cells}, Blue = {blue_cells}')
+        plt.title(f'{total_cells} total cells. m-cones = {green_cells}, s-cones = {blue_cells}')
         if showPlot:
             plt.show()
         else:
