@@ -21,7 +21,7 @@ def explore_parameters():
             "init_mode": "bfs",
             "max_probability": p
         }
-        _, variance = run_simulation(cells_parameters, grid_size, writeLogs=True, createGif=True, createCDF=True)
+        _, variance = run_simulation(cells_parameters, grid_size, writeLogs=True, createGif=True, CDF_analys=True)
 
 
 if __name__ == "__main__":

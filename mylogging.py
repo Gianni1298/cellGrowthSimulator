@@ -1,37 +1,48 @@
 import os
 import csv
 
+import pandas as pd
+
 
 class myLogger:
     def __init__(self, filename):
-        # Creates a csv file if it doesn't exist with the required columns
-        # Opens it if a csv file with the same name already exists
-        self.file = open(filename, 'a')
-        self.writer = csv.writer(self.file, delimiter='|')
-        if os.stat(filename).st_size == 0:
-            self.writer.writerow(['gridSize', 'sConesInit','mConesInit', 'sConesFinal','mConesFinal','maxProb',
-                                  'cell_indexes', 'blueHexCenters','voronoi areas','voronoi area variance','FTFreq-Magnitude',
-                                  'NNA distances', 'R_NNA'])
+        # Initialize the DataFrame with the required columns
+        self.data = pd.DataFrame(columns=['gridSize', 'sConesInit', 'mConesInit', 'sConesFinal', 'mConesFinal',
+                                          'maxProb', 'cell_indexes', 'blueHexCenters', 'voronoi areas',
+                                          'voronoi area variance', 'FTFreq-Magnitude', 'NN distances',
+                                          'ripleyG', 'ripleyF', 'ripleyJ', 'ripleyK', 'ripleyL'])
+        self.filename = filename
 
-    def log_results(self, parameters, cell_indexes, blue_cell_indexes, voronoi_areas, voronoi_variance, FTFrequencies, neareast_neigbour_distances, R_NNA):
-        # Convert arrays to strings
+    def log_results(self, parameters, cell_indexes, blue_cell_indexes, voronoi_areas, voronoi_variance, FTFrequencies,
+                    nnd, ripleyG, ripleyF, ripleyJ, ripleyK, ripleyL):
+        # Create a new row as a dictionary
+        new_row = {'gridSize': parameters['grid_size'],
+                   'sConesInit': parameters['s_cones_init_count'],
+                   'mConesInit': parameters['m_cones_init_count'],
+                   'sConesFinal': parameters['s_cones_final_count'],
+                   'mConesFinal': parameters['m_cones_final_count'],
+                   'maxProb': parameters['max_probability'],
+                   'cell_indexes': cell_indexes,
+                   'blueHexCenters': blue_cell_indexes,
+                   'voronoi areas': voronoi_areas,
+                   'voronoi area variance': voronoi_variance,
+                   'FTFreq-Magnitude': FTFrequencies,
+                   'NN distances': nnd,
+                   'ripleyG': ripleyG,
+                   'ripleyF': ripleyF,
+                   'ripleyJ': ripleyJ,
+                   'ripleyK': ripleyK,
+                   'ripleyL': ripleyL}
 
-        voronoi_areas_str = ','.join(map(str, voronoi_areas))
+        # Append the row to the DataFrame
+        self.data.loc[len(self.data)] = new_row
+        self.save_to_csv()
 
-
-        self.writer.writerow([f"{parameters['grid_size']}",
-                        f"{parameters['s_cones_init_count']}",
-                        f"{parameters['m_cones_init_count']}",
-                        f"{parameters['s_cones_final_count']}",
-                        f"{parameters['m_cones_final_count']}",
-                        f"{parameters['max_probability']}",
-                        f"{cell_indexes}",
-                        f"{blue_cell_indexes}",
-                        f"{voronoi_areas_str}",
-                        f"{voronoi_variance}",
-                        f"{FTFrequencies}",
-                        f"{neareast_neigbour_distances}",
-                        f"{R_NNA}"])
-
-    def close(self):
-        self.file.close()
+    def save_to_csv(self):
+        # Check if the file exists
+        if os.path.exists(self.filename):
+            # Append without header
+            self.data.to_csv(self.filename, mode='a', header=False, index=False, sep='|')
+        else:
+            # Write with header
+            self.data.to_csv(self.filename, mode='w', header=True, index=False, sep='|')

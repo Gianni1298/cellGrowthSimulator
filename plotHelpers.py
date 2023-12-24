@@ -7,12 +7,12 @@ from scipy.spatial import voronoi_plot_2d
 
 
 def save_plot(fig, filename):
-    plt.savefig(f'output_plots/v4/{filename}.png')
+    plt.savefig(f'output_plots/{filename}.png')
     plt.close(fig)
 
 
 def create_gif(gif_name):
-    path = 'output_plots/v4'
+    path = 'output_plots'
 
     filenames = [f for f in os.listdir(path) if f.endswith('.png')]
     # Sorting files numerically based on the number in the filename
@@ -25,12 +25,18 @@ def create_gif(gif_name):
     # Check if file exists and append a number starting from 1
     base_name = gif_name
     counter = 1
-    gif_path = os.path.join(path, f'{base_name}_{counter}.gif')
+    gif_path = os.path.join(path, 'gif', f'{base_name}_{counter}.gif')
     while os.path.exists(gif_path):
         counter += 1
         gif_path = os.path.join(path, f'{base_name}_{counter}.gif')
 
     imageio.mimsave(gif_path, images, duration=0.5)
+
+    # Save the last frame separately
+    last_frame = images[-1]
+    last_frame_path = os.path.join(path, 'last_frames', f'{base_name}_last_frame.png')
+    imageio.v3.imwrite(last_frame_path, last_frame)
+
 
     for filename in filenames:
         os.remove(os.path.join(path, filename))
@@ -49,7 +55,7 @@ def createCDFPlot(areas, string_params):
     # Increment filename if file already exists
     base_name = 'CDF'
     counter = 1
-    path = 'output_plots/v4/cdf'
+    path = 'output_plots/cdf'
     file_path = os.path.join(path, f'{base_name}_{string_params}_{counter}.png')
     while os.path.exists(file_path):
         counter += 1
@@ -89,7 +95,7 @@ def createVoronoiPlot(vor, grid_bounds, string_params):
     # Increment filename if file already exists
     base_name = 'voronoi'
     counter = 1
-    path = 'output_plots/v4/voronoi'
+    path = 'output_plots/voronoi'
     file_path = os.path.join(path, f'{base_name}_{string_params}_{counter}.png')
     while os.path.exists(file_path):
         counter += 1
@@ -110,7 +116,7 @@ def createFTPlot(frequency, total_magnitude, string_params):
     # Increment filename if file already exists
     base_name = 'FT'
     counter = 1
-    path = 'output_plots/v4/ft'
+    path = 'output_plots/ft'
     file_path = os.path.join(path, f'{base_name}_{string_params}_{counter}.png')
     while os.path.exists(file_path):
         counter += 1
@@ -119,27 +125,6 @@ def createFTPlot(frequency, total_magnitude, string_params):
     plt.savefig(file_path)
     plt.close()
 
-def createNNAPlot(points, nearest_neighbor_distances, string_params):
-    plt.figure()
-    plt.scatter(points[:, 0], points[:, 1], label='Cells')
-    for point, distance in zip(points, nearest_neighbor_distances):
-        circle = plt.Circle(point, distance, color='r', fill=False, linestyle='--', linewidth=0.5)
-        plt.gca().add_patch(circle)
-
-    plt.title(f'Nearest Neighbor Analysis')
-    plt.legend()
-
-    # Increment filename if file already exists
-    base_name = 'NNA'
-    counter = 1
-    path = 'output_plots/v4/nna'
-    file_path = os.path.join(path, f'{base_name}_{string_params}_{counter}.png')
-    while os.path.exists(file_path):
-        counter += 1
-        file_path = os.path.join(path, f'{base_name}_{counter}.png')
-
-    plt.savefig(file_path)
-    plt.close()
 
 def createRipleyPlots(points, nearest_neighbor_distances, ripleyG, ripleyF, ripleyJ, ripleyK, ripleyL, string_params):
     # Create a figure with 6 subplots
@@ -232,7 +217,7 @@ def createRipleyPlots(points, nearest_neighbor_distances, ripleyG, ripleyF, ripl
     # Increment filename if file already exists
     base_name = 'ripley'
     counter = 1
-    path = 'output_plots/v4/nna'
+    path = 'output_plots/nna'
     file_path = os.path.join(path, f'{base_name}_{string_params}_{counter}.png')
     while os.path.exists(file_path):
         counter += 1

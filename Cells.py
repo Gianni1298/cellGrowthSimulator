@@ -258,3 +258,47 @@ class Cells:
         chosen_move = np.random.choice(sorted_moves, p=probabilities)
         return chosen_move
 
+    def find_closed_loop(self):
+        # Step 1: Find the starting point
+        starting_point = None
+        for cell_index in self.cell_indexes:
+            _, neighbour_indexes = self.hex_grid.find_neighbours(cell_index)
+            for neighbour in neighbour_indexes:
+                if neighbour not in self.cell_indexes:
+                    starting_point = neighbour
+                    break
+            if starting_point is not None:
+                break
+
+        if starting_point is None:
+            print("The perimeter of the population couldn't be found")
+            return []  # No loop found
+
+        # Step 2: Initialize loop tracking
+        loop = [starting_point]
+        current_cell = starting_point
+
+        # Step 3: Iterate over neighbors to find the loop
+        while True:
+            _, neighbour_indexes = self.hex_grid.find_neighbours(current_cell)
+            potential_next_cells = []
+            for neighbour in neighbour_indexes:
+                if neighbour not in self.cell_indexes and neighbour not in loop:
+                    adjacent_to_population = any(n in self.cell_indexes for n in self.hex_grid.find_neighbours(neighbour)[1])
+                    if adjacent_to_population:
+                    # Count the number of neighbours
+                        neighbour_count = len([n for n in self.hex_grid.find_neighbours(neighbour)[1] if n not in self.cell_indexes])
+                        potential_next_cells.append((neighbour, neighbour_count))
+
+            if not potential_next_cells:
+                print("A perimeter has been found")
+                break  # Loop is closed or no next cell found
+
+            # Choose the next cell as the one with the most neighbours
+            next_cell = max(potential_next_cells, key=lambda x: x[1])[0]
+            loop.append(next_cell)
+            current_cell = next_cell
+
+        # Step 4: Find the x, y points of the loop
+        points = [self.hex_grid.hex_centers[index] for index in loop]
+        return points
