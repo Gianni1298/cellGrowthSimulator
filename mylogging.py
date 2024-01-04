@@ -10,7 +10,7 @@ class myLogger:
         self.data = pd.DataFrame(columns=['gridSize', 'sConesInit', 'mConesInit', 'sConesFinal', 'mConesFinal',
                                           'maxProb', 'cell_indexes', 'blueHexCenters', 'voronoi areas',
                                           'voronoi area variance', 'FTFreq-Magnitude', 'NN distances',
-                                          'ripleyG', 'ripleyF', 'ripleyJ', 'ripleyK', 'ripleyL'])
+                                          'ripleyG', 'ripleyF', 'ripleyJ', 'ripleyK', 'ripleyL', 'sCones-mCones ratio'])
         self.filename = filename
 
     def log_results(self, parameters, cell_indexes, blue_cell_indexes, voronoi_areas, voronoi_variance, FTFrequencies,
@@ -32,7 +32,8 @@ class myLogger:
                    'ripleyF': ripleyF,
                    'ripleyJ': ripleyJ,
                    'ripleyK': ripleyK,
-                   'ripleyL': ripleyL}
+                   'ripleyL': ripleyL,
+                   'sCones-mCones ratio': parameters['sCones_to_mCones_ratio']}
 
         # Append the row to the DataFrame
         self.data.loc[len(self.data)] = new_row

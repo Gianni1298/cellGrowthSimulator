@@ -9,8 +9,8 @@ class Cells:
         self.hex_grid = hex_grid
         self.params = params
         self.final_cell_count = int(params["grid_size"] * params["grid_size"] * 0.7)
-        self.s_cones_final_count = int(self.final_cell_count * 0.08)
-        self.m_cones_final_count = int(self.final_cell_count * 0.92)
+        self.s_cones_final_count = int(self.final_cell_count * params["sCones_to_mCones_ratio"])
+        self.m_cones_final_count = int(self.final_cell_count * (1 - params["sCones_to_mCones_ratio"]))
         self.cell_indexes = self.init(params["init_mode"])  # Map of cell indexes to cell color {index: color}
         print(self.cell_indexes)
         self.debug = {"birth_colors": [], "birth_probabilities": []}
@@ -60,7 +60,6 @@ class Cells:
 
     def move_cell_bfs(self, savePlot=False):
         cell_to_move_index = random.choice(list(self.cell_indexes.keys()))
-        # cell_to_move_index = self.hex_grid.find_closest_hexagon(0, 0)
 
         path = self.find_shortest_path_to_empty(cell_to_move_index)
         if path:
@@ -106,53 +105,6 @@ class Cells:
         self.cell_indexes[path[0]] = moving_color
         del self.cell_indexes[path[0]]
 
-    def move_cell_dfs(self):
-        # Randomly select a cell to start the cascade
-        # cell_to_move_index = random.choice(list(self.cell_indexes.keys()))
-        cell_to_move_index = self.hex_grid.find_closest_hexagon(0, 0)
-        print("Moving cell at index", cell_to_move_index)
-
-        moving_color = self.cell_indexes[cell_to_move_index]
-        move = self.choose_move(cell_to_move_index)
-
-        if move not in self.cell_indexes:
-            # Direct move if the spot is empty
-            self.cell_indexes[move] = moving_color
-        else:
-            # If the spot is occupied, start a cascade move
-            self.cascade_move_dfs(move, moving_color, visited={cell_to_move_index})
-
-        # A new cell is born that takes the place of the cell that moved
-        del self.cell_indexes[cell_to_move_index]
-
-
-    def cascade_move_dfs(self, current_index, moving_color, visited=None):
-        if visited is None:
-            visited = set()
-
-        # Mark the current cell as visited
-        visited.add(current_index)
-        neighbours, neighbour_indexes = self.hex_grid.find_neighbours(current_index)
-
-        # Sort neighbours by increasing distance from the center
-        sorted_neighbours = sorted(neighbour_indexes,
-                                   key=lambda ix: (ix in self.cell_indexes, -self.hex_grid.calculate_distance(ix)))
-
-        for next_move in sorted_neighbours:
-            if next_move in visited:
-                continue  # Skip already visited cells to prevent cycles
-
-            if next_move not in self.cell_indexes:
-                self.cell_indexes[next_move] = self.cell_indexes[current_index]
-                self.cell_indexes[current_index] = moving_color
-                return
-            else:
-                # Continue the cascade with the color of the cell that is being displaced
-                displaced_color = self.cell_indexes[current_index]
-                self.cell_indexes[current_index] = moving_color
-                self.cascade_move_dfs(next_move, displaced_color, visited)
-                return
-        return
 
     def cell_birth(self):
         # A blue cell or green cell is born with a probability given by the parameters in the config and the current cell count
