@@ -48,7 +48,7 @@ def createCDFPlot(areas, string_params):
     cum_probs = np.arange(1, len(areas) + 1) / len(areas)
     plt.plot(areas_sorted, cum_probs)
     plt.xlabel('Area')
-    plt.xlim(0, 100)
+    plt.xlim(0, areas_sorted[-1])
     plt.ylabel('Cumulative Probability')
     plt.title('Cumulative Distribution Function of Cell Areas')
 

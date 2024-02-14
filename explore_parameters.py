@@ -3,37 +3,35 @@ import numpy as np
 from runSimulation import run_simulation
 
 def explore_parameters():
-    # Define parameter ranges for grid search
-    s_cones_init = np.array([1, 20, 40, 60, 80])
-    m_cones_init = np.array([1, 30, 80, 200, 300, 500, 700, 900])
-    max_probability = np.array(0.1)  # Adjust the range and step as needed
+    max_probability = [0.1, 0.5, 1] # values of max_probability to explore
 
-    for i in range(10):
-        params = {
-            "grid_size": 45, # total number of hexagons in the grid = grid_size * grid_size
-
-            "s_cones_init_count": 90,
-            "m_cones_init_count": 0,
-            "sCones_to_mCones_ratio": 0.03,
-
-
-            "init_mode": "bfs",
-            "max_probability": 0.1
-        }
-        run_simulation(params, writeLogs=True, createGif=True, voronoi_analysis=True, FT_analysis=True, NN_analysis=False)
-
-        for m in [50, 200, 500, 1000, 2000, 2700]:
+    for prob in max_probability:
+        for i in range(10):
             params = {
-                "grid_size": 45, # total number of hexagons in the grid = grid_size * grid_size
+                "grid_size": 50, # total number of hexagons in the grid = grid_size * grid_size
 
-                "s_cones_init_count": 0,
-                "m_cones_init_count": m,
-
+                "s_cones_init_count": 50,
+                "m_cones_init_count": 0,
+                "sCones_to_mCones_ratio": 0.03,
 
                 "init_mode": "bfs",
-                "max_probability": 0.1
+                "max_probability": prob
             }
             run_simulation(params, writeLogs=True, createGif=True, voronoi_analysis=True, FT_analysis=True, NN_analysis=False)
+
+            for m in [200, 1000, 1690]:
+                params = {
+                    "grid_size": 50, # total number of hexagons in the grid = grid_size * grid_size
+
+                    "s_cones_init_count": 0,
+                    "m_cones_init_count": m,
+                    "sCones_to_mCones_ratio": 0.03,
+
+
+                    "init_mode": "bfs",
+                    "max_probability": prob
+                }
+                run_simulation(params, writeLogs=True, createGif=True, voronoi_analysis=True, FT_analysis=True, NN_analysis=False)
 
 
 
