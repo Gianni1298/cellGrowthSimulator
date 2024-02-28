@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-df = pd.read_csv('logs.csv', sep='|', on_bad_lines = 'warn',
+df = pd.read_csv('logs/logs.csv', sep='|', on_bad_lines = 'warn',
                  names=['gridSize', 'sConesInit', 'mConesInit', 'sConesFinal', 'mConesFinal', 'maxProb', 'cell_indexes',
                         'blueHexCenters', 'voronoi areas', 'voronoi area variance', 'FTFreq-Magnitude', 'NN distances',
                         'ripleyG', 'ripleyF', 'ripleyJ', 'ripleyK', 'ripleyL', 'sCones-mCones ratio'], skiprows=1)

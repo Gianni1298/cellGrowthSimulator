@@ -8,10 +8,11 @@ class Cells:
     def __init__(self, hex_grid, params):
         self.hex_grid = hex_grid
         self.params = params
-        self.final_cell_count = int(params["grid_size"] * params["grid_size"] * 0.7)
+        self.final_cell_count = int(params["grid_size"] * params["grid_size"] * 0.3)
         self.s_cones_final_count = int(self.final_cell_count * params["sCones_to_mCones_ratio"])
         self.m_cones_final_count = int(self.final_cell_count * (1 - params["sCones_to_mCones_ratio"]))
         self.cell_indexes = self.init(params["init_mode"])  # Map of cell indexes to cell color {index: color}
+        self.move_mode = params["move_mode"]
         print(self.cell_indexes)
         self.debug = {"birth_colors": [], "birth_probabilities": []}
 
@@ -61,11 +62,15 @@ class Cells:
     def move_cell_bfs(self, savePlot=False):
         cell_to_move_index = random.choice(list(self.cell_indexes.keys()))
 
-        path = self.find_shortest_path_to_empty(cell_to_move_index)
+        if self.move_mode == "line":
+            movement_direction = random.choice(self.hex_grid.directions)
+            path = self.find_path_following_direction(cell_to_move_index, movement_direction)
+        else:
+            path = self.find_shortest_path_to_empty(cell_to_move_index)
+
         if path:
             self.move_along_path(path)
-
-        self.cell_indexes[cell_to_move_index] = self.cell_birth()
+            self.cell_indexes[cell_to_move_index] = self.cell_birth()
 
         if len(self.cell_indexes) > self.final_cell_count:
             self.stopSignal = True
@@ -93,6 +98,21 @@ class Cells:
                         queue.append((neighbour, path + [neighbour]))
                         visited.add(neighbour)
         return None
+
+    def find_path_following_direction(self, start_index, direction):
+        path = [start_index]
+
+        # Find the path to an empty cell in the given direction
+        x, y = self.hex_grid.hex_centers[start_index]
+        dx, dy = direction
+
+        next_hex =  self.hex_grid.find_hexagon_index(x + dx, y + dy)
+        while next_hex in self.cell_indexes:
+            path = path + [next_hex]
+            x, y = x + dx, y + dy
+            next_hex = self.hex_grid.find_hexagon_index(x + dx, y + dy)
+
+        return path + [next_hex]
 
     def move_along_path(self, path):
         if len(path) < 2:

@@ -14,6 +14,7 @@ class HexGrid:
         self.blue_indices = []
         self.x_center, self.y_center = self.hex_centers[:, 0].mean(), self.hex_centers[:, 1].mean()
         self.sorted_distances, self.sorted_indexes = self.get_sorted_distances()
+        self.directions = self.get_movement_directions()
 
     def generate_hex_centers(self, size):
         # Generate hexagon centers
@@ -26,6 +27,14 @@ class HexGrid:
             index = np.where(mask)[0][0]
             return index
         return None
+
+    def get_movement_directions(self):
+        return [(1, 0),  # Right
+                (-1, 0),  # Left
+                (0.5, np.sqrt(3) / 2),  # Top right
+                (-0.5, np.sqrt(3) / 2),  # Top left
+                (0.5, -np.sqrt(3) / 2),  # Bottom right
+                (-0.5, -np.sqrt(3) / 2)]  # Bottom left
 
     def find_closest_hexagon(self, x, y):
         # Calculate distances from the point (x, y) to each hex center
@@ -49,17 +58,9 @@ class HexGrid:
         # Find the neighbors of the hexagon at the specified index
         x, y = self.hex_centers[hex_ix]
 
-        # Directions for hexagonal grid neighbors
-        directions = [(1, 0),  # Right
-                      (-1, 0),  # Left
-                      (0.5, np.sqrt(3) / 2),  # Top right
-                      (-0.5, np.sqrt(3) / 2),  # Top left
-                      (0.5, -np.sqrt(3) / 2),  # Bottom right
-                      (-0.5, -np.sqrt(3) / 2)]  # Bottom left
-
         neighbors = []
         indexes = []
-        for dx, dy in directions:
+        for dx, dy in self.directions:
             neighbour = self.find_neighbour(x, y, dx, dy)
             if neighbour is not None:
                 neighbors.append(neighbour)

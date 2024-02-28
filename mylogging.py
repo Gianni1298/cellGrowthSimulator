@@ -40,10 +40,11 @@ class myLogger:
         self.save_to_csv()
 
     def save_to_csv(self):
+
         # Check if the file exists
-        if os.path.exists(self.filename):
+        if os.path.exists(f"logs/{self.filename}"):
             # Append without header
-            self.data.to_csv(self.filename, mode='a', header=False, index=False, sep='|')
+            self.data.to_csv("logs/" + self.filename, mode='a', header=False, index=False, sep='|')
         else:
             # Write with header
-            self.data.to_csv(self.filename, mode='w', header=True, index=False, sep='|')
+            self.data.to_csv("logs/" + self.filename, mode='w', header=True, index=False, sep='|')
