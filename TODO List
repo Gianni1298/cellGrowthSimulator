@@ -1,0 +1,4 @@
+# Adjust the voronoi diagram to use a square of the size of the cells
+# Calculate new metrics for the cells (ask Sara) - if possible calculate metrics mid-simulations
+# Run more simulations with 8% proportions
+

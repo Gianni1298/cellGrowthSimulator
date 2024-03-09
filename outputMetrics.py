@@ -36,7 +36,8 @@ class outputMetrics:
 
     def calculate_voronoi_areas(self):
         vor = Voronoi(self.points)
-        areas = calculate_voronoi_areas(vor, self.cells.hex_grid.grid_bounds)
+        grid_bounds = calculate_external_cell_bounds(self.cells.cell_indexes, self.cells.hex_grid.hex_centers)
+        areas = calculate_voronoi_areas(vor, grid_bounds)
         variance = calculate_area_variance(areas)
 
         createVoronoiPlot(vor, self.cells.hex_grid.grid_bounds, areas, self.string_params)
@@ -97,3 +98,13 @@ def calculate_voronoi_areas(vor, grid_bounds):
 def calculate_area_variance(areas):
     return np.var(areas)
 
+def calculate_external_cell_bounds(cell_indexes, hex_centers):
+    blue_cells = [i for i in cell_indexes.keys() if cell_indexes[i] == 'b']
+    blue_hex_centers = [hex_centers[i] for i in blue_cells]
+    # Find the hex_center with the maximum x and y coordinates
+    xmax = max([i[0] for i in blue_hex_centers])
+    ymax = max([i[1] for i in blue_hex_centers])
+    # Find the hex_center with the minimum x and y coordinates
+    xmin = min([i[0] for i in blue_hex_centers])
+    ymin = min([i[1] for i in blue_hex_centers])
+    return xmin, xmax, ymin, ymax

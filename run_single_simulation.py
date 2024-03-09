@@ -7,14 +7,14 @@ def run_single_simulation():
 
         "s_cones_init_count": 5,
         "m_cones_init_count": 10,
-        "sCones_to_mCones_ratio": 0.02,
+        "sCones_to_mCones_ratio": 0.08,
 
         "init_mode": "bfs",
         "move_mode": "line",
         "max_probability": 0.1
     }
 
-    run_simulation(params, writeLogs=False, createGif=True, voronoi_analysis=False, FT_analysis=False, NN_analysis=False)
+    run_simulation(params, writeLogs=False, createGif=True, voronoi_analysis=True, FT_analysis=False, NN_analysis=False)
 
 
 if __name__ == "__main__":
