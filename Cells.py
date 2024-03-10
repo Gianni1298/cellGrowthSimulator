@@ -59,6 +59,17 @@ class Cells:
 
         return cell_indexes
 
+    def get_sCones_cells(self):
+        return [i for i in self.cell_indexes.keys() if self.cell_indexes[i] == 'b']
+
+    def create_string_params(self):
+        string_params = f"sConesInit={self.params['s_cones_init_count']}_" \
+                        f"mConesInit={self.params['m_cones_init_count']}_" \
+                        f"maxProb={self.params['max_probability']}_" \
+                        f"gridSize={self.params['grid_size']}_" \
+                        f"sConesRatio={self.params['sCones_to_mCones_ratio']}"
+        return string_params
+
     def move_cell_bfs(self, savePlot=False):
         cell_to_move_index = random.choice(list(self.cell_indexes.keys()))
 

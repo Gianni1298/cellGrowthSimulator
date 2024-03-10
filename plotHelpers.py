@@ -7,12 +7,12 @@ from scipy.spatial import voronoi_plot_2d
 
 
 def save_plot(fig, filename):
-    plt.savefig(f'output_plots/{filename}.png')
+    plt.savefig(f'output/{filename}.png')
     plt.close(fig)
 
 
 def create_gif(gif_name):
-    path = 'output_plots'
+    path = 'output'
 
     filenames = [f for f in os.listdir(path) if f.endswith('.png')]
     # Sorting files numerically based on the number in the filename
@@ -55,7 +55,7 @@ def createCDFPlot(areas, string_params):
     # Increment filename if file already exists
     base_name = 'CDF'
     counter = 1
-    path = 'output_plots/cdf'
+    path = 'output/cdf'
     file_path = os.path.join(path, f'{base_name}_{string_params}_{counter}.png')
     while os.path.exists(file_path):
         counter += 1
@@ -104,7 +104,7 @@ def createVoronoiPlot(vor, grid_bounds, areas, string_params):
     # Increment filename if file already exists
     base_name = 'voronoi'
     counter = 1
-    path = 'output_plots/voronoi'
+    path = 'output/voronoi'
     file_path = os.path.join(path, f'{base_name}_{string_params}_{counter}.png')
     while os.path.exists(file_path):
         counter += 1
@@ -125,7 +125,7 @@ def createFTPlot(frequency, total_magnitude, string_params):
     # Increment filename if file already exists
     base_name = 'FT'
     counter = 1
-    path = 'output_plots/ft'
+    path = 'output/ft'
     file_path = os.path.join(path, f'{base_name}_{string_params}_{counter}.png')
     while os.path.exists(file_path):
         counter += 1
@@ -226,7 +226,7 @@ def createRipleyPlots(points, nearest_neighbor_distances, ripleyG, ripleyF, ripl
     # Increment filename if file already exists
     base_name = 'ripley'
     counter = 1
-    path = 'output_plots/nna'
+    path = 'output/nna'
     file_path = os.path.join(path, f'{base_name}_{string_params}_{counter}.png')
     while os.path.exists(file_path):
         counter += 1
@@ -234,4 +234,33 @@ def createRipleyPlots(points, nearest_neighbor_distances, ripleyG, ripleyF, ripl
 
     plt.savefig(file_path)
 
+    plt.close()
+
+def createNNPlot(points, distances, indexes, string_params):
+    plt.figure()
+    plt.scatter(points[:, 0], points[:, 1], c='blue', label='Cells')
+
+    # Draw lines to nearest neighbors and annotate the distance
+    for i, (distance, index) in enumerate(zip(distances, indexes)):
+        point = points[i]
+        nearest_neighbor = points[index]
+
+        # Draw line
+        plt.plot([point[0], nearest_neighbor[0]], [point[1], nearest_neighbor[1]], 'r--')
+
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.legend()
+    plt.title('Nearest Neighbor Distances')
+
+    # Increment filename if file already exists
+    base_name = 'nna'
+    counter = 1
+    path = 'output/nna'
+    file_path = os.path.join(path, f'{base_name}_{string_params}_{counter}.png')
+    while os.path.exists(file_path):
+        counter += 1
+        file_path = os.path.join(path, f'{base_name}_{string_params}_{counter}.png')
+
+    plt.savefig(file_path)
     plt.close()
