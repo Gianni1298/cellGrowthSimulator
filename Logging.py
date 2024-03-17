@@ -28,6 +28,8 @@ class myLogger:
         }
 
     def log_running_metrics(self, cells, has_voronoi_analysis, has_NN_analysis):
+        if len(cells.get_sCones_cells()) < 10:
+            return
         if len(cells.cell_indexes) % 20 != 0:
             return
 

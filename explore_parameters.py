@@ -12,13 +12,13 @@ def explore_parameters():
 
                 "s_cones_init_count": 50,
                 "m_cones_init_count": 0,
-                "sCones_to_mCones_ratio": 0.03,
+                "sCones_to_mCones_ratio": 0.08,
 
                 "init_mode": "bfs",
                 "move_mode": "line",
                 "max_probability": prob
             }
-            run_simulation(params, writeLogs=True, createGif=True, voronoi_analysis=True, FT_analysis=True, NN_analysis=False)
+            run_simulation(params, writeLogs=True, createGif=True, has_voronoi_analysis=True, has_NN_analysis=True)
 
             for m in [200, 1000, 1690]:
                 params = {
@@ -26,14 +26,14 @@ def explore_parameters():
 
                     "s_cones_init_count": 0,
                     "m_cones_init_count": m,
-                    "sCones_to_mCones_ratio": 0.03,
+                    "sCones_to_mCones_ratio": 0.08,
 
 
                     "init_mode": "bfs",
                     "move_mode": "line",
                     "max_probability": prob
                 }
-                run_simulation(params, writeLogs=True, createGif=True, voronoi_analysis=True, FT_analysis=True, NN_analysis=False)
+                run_simulation(params, writeLogs=True, createGif=True, has_voronoi_analysis=True, has_NN_analysis=True)
 
 
 
