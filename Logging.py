@@ -20,12 +20,16 @@ class myLogger:
             'sConesInit': params['s_cones_init_count'],
             'mConesInit': params['m_cones_init_count'],
             'move_mode': params['move_mode'],
-            'VDRI[# of cells -> VDRI]': [], # List of VDRI values
-            'NNRI[# of cells -> NNRI]': [], # List of NNRI values
+            'sCones_coordinates': [],  # List of sCones coordinates
             'voronoi areas': [], # List of voronoi areas
             'voronoi area variance': [], # List of voronoi area variance
             'NN-distances': [], # List of NN distances
+            'VDRI[# of cells -> VDRI]': [], # List of VDRI values
+            'NNRI[# of cells -> NNRI]': [], # List of NNRI values
         }
+
+    def log_sCones_coordinates(self, sCones_coordinates):
+        self.data['sCones_coordinates'] = sCones_coordinates.tolist()
 
     def log_running_metrics(self, cells, has_voronoi_analysis, has_NN_analysis):
         if len(cells.get_sCones_cells()) < 10:
