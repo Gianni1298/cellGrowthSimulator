@@ -1,12 +1,9 @@
+import math
 import os
-import csv
 from datetime import datetime
 import json
 
-import pandas as pd
-
-import Metrics
-
+from src import Metrics
 
 class myLogger:
     def __init__(self, cells, params):
@@ -24,8 +21,8 @@ class myLogger:
             'voronoi areas': [], # List of voronoi areas
             'voronoi area variance': [], # List of voronoi area variance
             'NN-distances': [], # List of NN distances
-            'VDRI[# of cells -> VDRI]': [], # List of VDRI values
-            'NNRI[# of cells -> NNRI]': [], # List of NNRI values
+            'VDRI[n of cells -> VDRI]': [], # List of VDRI values
+            'NNRI[n of cells -> NNRI]': [], # List of NNRI values
         }
 
     def log_sCones_coordinates(self, sCones_coordinates):
@@ -38,13 +35,13 @@ class myLogger:
             return
 
         if has_voronoi_analysis:
-            self.data['VDRI[# of cells -> VDRI]'].append([
+            self.data['VDRI[n of cells -> VDRI]'].append([
                 len(cells.cell_indexes),
                 Metrics.calculate_VDRI(cells)
             ])
 
         if has_NN_analysis:
-            self.data['NNRI[# of cells -> NNRI]'].append([
+            self.data['NNRI[n of cells -> NNRI]'].append([
                 len(cells.cell_indexes),
                 Metrics.calculate_NNRI(cells)
             ])
@@ -60,10 +57,16 @@ class myLogger:
     def write_logs(self):
         if not os.path.exists('output/logs.json'):
             with open('output/logs.json', 'w') as f:
-                f.write(json.dumps(self.data) + "\n")  # Add a newline to separate entries
+                json.dump([self.data], f, indent=2)
         else:
-            with open("output/logs.json", "a") as f:
-                f.write(json.dumps(self.data) + "\n")  # Add a newline to separate entries
+            with open("output/logs.json", "r+") as f:
+                past_logs = json.load(f)
+                past_logs.append(self.data)
+                f.seek(0)
+                json.dump(past_logs, f, indent=2)
+                f.truncate()
+
+
 
 
     def log_results(self, parameters, cell_indexes, blue_cell_indexes, voronoi_areas, voronoi_variance, FTFrequencies,

@@ -1,12 +1,9 @@
-from datetime import time, datetime
-
-from scipy.spatial import Voronoi, KDTree, cKDTree
+from scipy.spatial import Voronoi, cKDTree
 from shapely import Polygon
 import numpy as np
 
-from pointpats import PointPattern, PoissonPointProcess, as_window, g_test, f_test, j_test, k_test, l_test
-    # , Genv, Fenv, Jenv, Kenv, Lenv
-import plotHelpers
+# , Genv, Fenv, Jenv, Kenv, Lenv
+from src import plotHelpers
 
 
 def calculateOutputs(cells, createGif=False, has_voronoi_analysis=False, has_NN_analysis=False, logger=None):
@@ -78,7 +75,12 @@ def calculate_voronoi_areas(cells):
 
 def calculate_VDRI(cells):
     vor, areas, grid_bounds = calculate_voronoi_areas(cells)
-    return np.mean(areas) / np.std(areas) # Return the mean divided by the standard deviation of the areas
+    vdri = np.mean(areas) / np.std(areas)
+    if vdri == np.nan:
+        vdri = "nan"
+    elif vdri == np.inf:
+        vdri = "inf" if vdri > 0 else "-inf"
+    return vdri # Return the mean divided by the standard deviation of the areas
 
 def calculate_NNRI(cells):
     distances, indexes = nearest_neighbor_distances(cells)

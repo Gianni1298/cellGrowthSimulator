@@ -1,7 +1,7 @@
-from Cells import Cells
-from HexGrid import HexGrid
-from Logging import myLogger as Logger
-from Metrics import calculateOutputs
+from src.Cells import Cells
+from src.HexGrid import HexGrid
+from src.Logging import myLogger as Logger
+from src.Metrics import calculateOutputs
 
 
 # Function to run the simulation with given parameters

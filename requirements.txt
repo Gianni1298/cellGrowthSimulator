@@ -4,3 +4,4 @@ matplotlib~=3.8.1
 imageio~=2.31.6
 scipy~=1.11.4
 shapely~=2.0.2
+pandas~=2.1.4

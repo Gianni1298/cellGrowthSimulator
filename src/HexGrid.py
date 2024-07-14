@@ -3,7 +3,7 @@ import os
 import imageio
 from hexalattice.hexalattice import *
 
-from plotHelpers import save_plot
+from src.plotHelpers import save_plot
 
 
 class HexGrid:
